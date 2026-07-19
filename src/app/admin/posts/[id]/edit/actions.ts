@@ -15,6 +15,8 @@ export async function updatePost(_state: EditPostState, formData: FormData): Pro
   const id = String(formData.get("postId") ?? "");
   const retained = formData.getAll("retainedPhotoPath").filter((value): value is string => typeof value === "string");
   const added = formData.getAll("uploadedPhotoPath").filter((value): value is string => typeof value === "string");
+  const detailPaths=formData.getAll("photoDetailPath").map(String);const detailAlts=formData.getAll("photoAlt").map(String);const detailCaptions=formData.getAll("photoCaption").map(String);
+  const newAlts=formData.getAll("newPhotoAlt").map(String);const newCaptions=formData.getAll("newPhotoCaption").map(String);
   const cover = formData.get("coverPhotoPath");
   const supabase = await createClient();
   const { data: existing } = await supabase.from("post_photos").select("storage_path").eq("post_id", id);
@@ -27,7 +29,10 @@ export async function updatePost(_state: EditPostState, formData: FormData): Pro
     p_notification_hook:v.notificationHook,p_body:v.body,p_status:v.status,p_retained_photo_paths:retained,p_new_photo_paths:added,
     p_cover_photo_path:typeof cover === "string" && cover ? cover : null,
   });
-  if (error) return { message: error.message };
+  if (error) {if(added.length)await supabase.storage.from("trip-photos").remove(added);return { message: error.message };}
+  const keptDetails=detailPaths.map((path,index)=>({path,alt:detailAlts[index]??"",caption:detailCaptions[index]??""})).filter((detail)=>retained.includes(detail.path));
+  const allDetails=[...keptDetails,...added.map((path,index)=>({path,alt:newAlts[index]??"",caption:newCaptions[index]??""}))];
+  const {error:detailError}=await supabase.rpc("update_journal_photo_details",{p_post_id:id,p_paths:allDetails.map((detail)=>detail.path),p_alt_texts:allDetails.map((detail)=>detail.alt),p_captions:allDetails.map((detail)=>detail.caption)});if(detailError)return{message:detailError.message};
   const { error:locationError } = await supabase.from("posts").update({latitude:v.latitude,longitude:v.longitude,loop_number:v.loopNumber}).eq("id",id);
   if(locationError)return {message:locationError.message};
   if(v.status==="published") { const {data:latest}=await supabase.from("posts").select("id").eq("status","published").order("entry_date",{ascending:false}).order("published_at",{ascending:false}).limit(1).maybeSingle();if(latest?.id===id)await supabase.from("trips").update({current_location_name:v.locationName,current_latitude:v.latitude,current_longitude:v.longitude,active_loop:v.loopNumber}).eq("status","active"); }

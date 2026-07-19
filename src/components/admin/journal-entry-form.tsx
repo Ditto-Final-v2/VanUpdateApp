@@ -5,6 +5,7 @@ import { useActionState, useEffect, useState, useTransition } from "react";
 import { publishJournalEntry, type JournalEntryState } from "@/app/admin/posts/new/actions";
 import { createClient } from "@/lib/supabase/client";
 import { LocationFields } from "@/components/admin/location-fields";
+import { preparePhoto } from "@/lib/image-upload";
 
 const initialState: JournalEntryState = { message: "" };
 const metricFields = [
@@ -37,10 +38,10 @@ export function JournalEntryForm({ today }: { today: string }) {
       const supabase = createClient();
       const batchId = crypto.randomUUID();
       for (const photo of photos) {
-        const extension = photo.type === "image/png" ? "png" : photo.type === "image/webp" ? "webp" : "jpg";
-        const path = `staged/${batchId}/${crypto.randomUUID()}.${extension}`;
-        const { error } = await supabase.storage.from("trip-photos").upload(path, photo, { contentType: photo.type, upsert: false });
-        if (error) { setUploadError(`Photo upload failed: ${error.message}`); return; }
+        const prepared=await preparePhoto(photo);
+        const path = `staged/${batchId}/${crypto.randomUUID()}.${prepared.extension}`;
+        const { error } = await supabase.storage.from("trip-photos").upload(path, prepared.blob, { contentType: prepared.type, upsert: false });
+        if (error) { if(paths.length)await supabase.storage.from("trip-photos").remove(paths);setUploadError(`Photo upload failed: ${error.message}`); return; }
         paths.push(path);
       }
       const data = new FormData(form);
@@ -48,6 +49,8 @@ export function JournalEntryForm({ today }: { today: string }) {
       paths.forEach((path) => data.append("uploadedPhotoPath", path));
       if (paths[coverIndex]) data.set("coverPhotoPath", paths[coverIndex]);
       startAction(() => formAction(data));
+    } catch(error) {
+      setUploadError(error instanceof Error?error.message:"The photos could not be prepared.");
     } finally {
       setUploading(false);
     }
@@ -77,8 +80,8 @@ export function JournalEntryForm({ today }: { today: string }) {
     <fieldset className="border-2 border-dashed border-sage p-4 sm:col-span-2">
       <legend className="px-2 text-sm font-bold uppercase tracking-[.1em] text-forest">Entry photos</legend>
       <label className="button-primary inline-flex cursor-pointer"><span>Choose photos</span><input className="sr-only" type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple onChange={choosePhotos} /></label>
-      <p className="mt-2 text-xs text-stone-600">On Android, this opens your camera or photo gallery. Up to 12 photos, 15 MB each.</p>
-      {previews.length > 0 && <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">{previews.map((src, index) => <label key={src} className={`cursor-pointer border-2 p-2 ${coverIndex === index ? "border-forest bg-[#e4eadf]" : "border-stone-300"}`}><span className="relative block aspect-[4/3] overflow-hidden bg-stone-100"><Image src={src} alt={`Selected photo ${index + 1}`} fill unoptimized className="object-cover" /></span><span className="mt-2 flex items-center gap-2 text-xs font-bold text-forest"><input type="radio" name="coverChoice" checked={coverIndex === index} onChange={() => setCoverIndex(index)} /> Main cover</span></label>)}</div>}
+      <p className="mt-2 text-xs text-stone-600">On Android, this opens your camera or gallery. Photos are rotated correctly and compressed to a maximum 2400px before upload.</p>
+      {previews.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-2">{previews.map((src, index) => <div key={src} className={`border-2 p-3 ${coverIndex === index ? "border-forest bg-[#e4eadf]" : "border-stone-300"}`}><span className="relative block aspect-[4/3] overflow-hidden bg-stone-100"><Image src={src} alt={`Selected photo ${index + 1}`} fill unoptimized className="object-cover" /></span><label className="mt-2 flex items-center gap-2 text-xs font-bold text-forest"><input type="radio" name="coverChoice" checked={coverIndex === index} onChange={() => setCoverIndex(index)} /> Main cover</label><label className="form-label mt-3">Alt text<input className="form-input mt-1 normal-case" name="newPhotoAlt" defaultValue={`Journal photo ${index+1}`} maxLength={200} required/></label><label className="form-label mt-2">Caption (optional)<input className="form-input mt-1 normal-case" name="newPhotoCaption" maxLength={500}/></label></div>)}</div>}
     </fieldset>
     <div className="sm:col-span-2"><label className="form-label" htmlFor="body">Body</label><textarea className="form-input mt-2 min-h-72 resize-y" id="body" name="body" required placeholder="Write the day’s story…" /></div>
     {uploadError && <p role="alert" className="border-2 border-red-800 bg-red-50 p-3 text-sm font-bold text-red-900 sm:col-span-2">{uploadError}</p>}

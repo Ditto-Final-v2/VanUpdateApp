@@ -66,10 +66,10 @@ export interface AdminPost {
   newStatesVisited: number; newNationalParksVisited: number; tanksOfGas: number;
   notificationHook: string; body: string; status: "draft" | "published";
   latitude:number;longitude:number;loopNumber:1|2;
-  photos: Array<{ path: string; url: string; alt: string }>; coverImagePath: string | null;
+  photos: Array<{ path: string; url: string; alt: string; caption:string }>; coverImagePath: string | null;
 }
 
-const adminColumns = "id,title,entry_date,location_name,latitude,longitude,loop_number,van_mileage,miles_walked,miles_ran,miles_biked,major_cities_visited,new_states_visited,new_national_parks_visited,tanks_of_gas,notification_title,body,status,cover_image_path,post_photos(storage_path,alt_text,sort_order)";
+const adminColumns = "id,title,entry_date,location_name,latitude,longitude,loop_number,van_mileage,miles_walked,miles_ran,miles_biked,major_cities_visited,new_states_visited,new_national_parks_visited,tanks_of_gas,notification_title,body,status,cover_image_path,post_photos(storage_path,alt_text,caption,sort_order)";
 
 export async function getAdminPosts() {
   const supabase = await createClient();
@@ -86,7 +86,7 @@ export async function getAdminPostById(id: string): Promise<AdminPost | null> {
     miles_walked:number; miles_ran:number; miles_biked:number; major_cities_visited:number;
     new_states_visited:number; new_national_parks_visited:number; tanks_of_gas:number;
     notification_title:string|null; body:string; status:"draft"|"published"; cover_image_path:string|null;
-    post_photos:Array<{storage_path:string;alt_text:string;sort_order:number}>|null;
+    post_photos:Array<{storage_path:string;alt_text:string;caption:string|null;sort_order:number}>|null;
   };
   const photoRows = (row.post_photos ?? []).sort((a,b) => a.sort_order-b.sort_order);
   const { data: signed } = photoRows.length ? await supabase.storage.from("trip-photos").createSignedUrls(photoRows.map((photo) => photo.storage_path), 3600) : { data: [] };
@@ -95,5 +95,5 @@ export async function getAdminPostById(id: string): Promise<AdminPost | null> {
     milesWalked:Number(row.miles_walked),milesRan:Number(row.miles_ran),milesBiked:Number(row.miles_biked),majorCitiesVisited:row.major_cities_visited,
     newStatesVisited:row.new_states_visited,newNationalParksVisited:row.new_national_parks_visited,tanksOfGas:Number(row.tanks_of_gas),
     notificationHook:row.notification_title??"",body:row.body,status:row.status,coverImagePath:row.cover_image_path,
-    photos:photoRows.flatMap((photo) => { const url=urls.get(photo.storage_path); return url ? [{path:photo.storage_path,url,alt:photo.alt_text}] : []; }) };
+    photos:photoRows.flatMap((photo) => { const url=urls.get(photo.storage_path); return url ? [{path:photo.storage_path,url,alt:photo.alt_text,caption:photo.caption??""}] : []; }) };
 }
