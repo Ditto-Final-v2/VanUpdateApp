@@ -38,6 +38,7 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
   useEffect(() => {
     if (!container.current || map.current) return;
     let instance: maplibregl.Map;
+    let repaintFrame: number | undefined;
     try {
       instance = new maplibregl.Map({ container: container.current, style: siteConfig.mapStyleUrl, center: center ?? [-109.5, 36], zoom: compact ? 8 : 4.6, minZoom: 2.5, maxZoom: 14, attributionControl: false, cooperativeGestures: true, dragRotate: false, pitchWithRotate: false, touchPitch: false });
     } catch {
@@ -54,7 +55,9 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
     const renderFallbackView = () => {
       if (!fallbackMap.current) return;
       const { scale, x, y } = fallbackView.current;
-      fallbackMap.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
+      fallbackMap.current.style.width = `${scale * 100}%`;
+      fallbackMap.current.style.height = `${scale * 100}%`;
+      fallbackMap.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     };
     const handleWheelZoom = (event: WheelEvent) => {
       if (event.cancelable) event.preventDefault();
@@ -154,14 +157,18 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
         vanArt.current = vanImage;
         new maplibregl.Marker({ element: vanMarker, anchor: "bottom" }).setLngLat([tripState?.longitude??-106.546623,tripState?.latitude??31.820633]).addTo(instance);
         instance.fitBounds(loopConfig[tripState?.activeLoop??1].bounds, { padding: 55, maxZoom: 6, duration: 0 });
-        setMapReady(true);
+        repaintFrame = window.requestAnimationFrame(() => {
+          instance.resize();
+          instance.triggerRepaint();
+          setMapReady(true);
+        });
       }
       posts.forEach((post) => {
         const el = document.createElement("button"); el.type = "button"; el.className = "trip-marker"; el.setAttribute("aria-label", `Open ${post.title}`); el.innerHTML = `<span>${post.tripDay}</span>`; el.addEventListener("click", () => setSelectedPost(post)); new maplibregl.Marker({ element: el, anchor: "bottom" }).setLngLat([post.longitude, post.latitude]).addTo(instance);
       });
     });
     instance.on("error", (event) => { if (event.error?.message?.includes("style")) setMapError("The interactive map style could not load. Showing the route preview instead."); });
-    return () => { window.clearTimeout(loadTimeout); mapSurface.removeEventListener("wheel", handleWheelZoom, { capture: true }); mapSurface.removeEventListener("pointerdown", handleFallbackPointerDown); mapSurface.removeEventListener("pointermove", handleFallbackPointerMove); mapSurface.removeEventListener("pointerup", handleFallbackPointerUp); mapSurface.removeEventListener("pointercancel", handleFallbackPointerUp); mapSurface.removeEventListener("touchstart", handleFallbackTouchStart); mapSurface.removeEventListener("touchmove", handleFallbackTouchMove); mapSurface.removeEventListener("touchend", handleFallbackTouchEnd); mapSurface.removeEventListener("touchcancel", handleFallbackTouchEnd); instance.remove(); map.current = null; };
+    return () => { window.clearTimeout(loadTimeout); if (repaintFrame !== undefined) window.cancelAnimationFrame(repaintFrame); mapSurface.removeEventListener("wheel", handleWheelZoom, { capture: true }); mapSurface.removeEventListener("pointerdown", handleFallbackPointerDown); mapSurface.removeEventListener("pointermove", handleFallbackPointerMove); mapSurface.removeEventListener("pointerup", handleFallbackPointerUp); mapSurface.removeEventListener("pointercancel", handleFallbackPointerUp); mapSurface.removeEventListener("touchstart", handleFallbackTouchStart); mapSurface.removeEventListener("touchmove", handleFallbackTouchMove); mapSurface.removeEventListener("touchend", handleFallbackTouchEnd); mapSurface.removeEventListener("touchcancel", handleFallbackTouchEnd); instance.remove(); map.current = null; };
   }, [center, compact, posts, tripState]);
 
   useEffect(() => {
@@ -182,7 +189,7 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
   }, [compact, mapReady, selectedLoop]);
 
   return <div className={`trip-map-shell relative overflow-hidden ${compact ? "trip-map-shell-compact h-72 rounded-3xl bg-[#d9ddd5]" : "trip-map-shell-main h-[62vh] min-h-[500px] max-h-[760px] rounded-[1.75rem] bg-[#d6e2e3] sm:min-h-[560px]"}`}>
-    {!compact && <div ref={fallbackMap} aria-hidden="true" className="trip-map-fallback absolute inset-0 z-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/data/planned-routes-loop-${selectedLoop}-selected.svg?v=van-nav-4')` }} />}
+    {!compact && <div ref={fallbackMap} aria-hidden="true" className={`trip-map-fallback absolute left-0 top-0 z-0 h-full w-full bg-contain bg-center bg-no-repeat ${mapReady && !mapError ? "opacity-0" : "opacity-100"}`} style={{ backgroundImage: `url('/data/planned-routes-loop-${selectedLoop}-selected.svg?v=van-nav-5')` }} />}
     <div ref={container} className="trip-map-canvas absolute inset-0 z-[1]" aria-label={compact ? "Map showing this journal entry location" : "Interactive map of the planned and completed road trip route"} />
     {!compact && <div aria-hidden="true" className="map-gesture-hint"><span className="map-tip-desktop">Drag to move · Scroll to zoom</span><span className="map-tip-mobile">Use two fingers to move or zoom · One finger scrolls the page</span></div>}
     {mapError && <div role="status" className="absolute inset-x-4 top-4 z-10 rounded-xl bg-white/95 p-4 text-sm shadow-lg"><strong>Route preview.</strong> {mapError}</div>}

@@ -112,7 +112,7 @@ body {
 .retro-valid { display: inline-block; border: 1px solid #29565c; background: #effcf8; padding: .2rem .35rem; color: #29565c; font: 700 .58rem "Courier New", monospace; }
 .maplibregl-ctrl-group { border-radius: 0 !important; border: 2px outset #ddd !important; }
 .trip-map-canvas { touch-action: auto; }
-.trip-map-fallback { transform-origin: 0 0; will-change: transform; pointer-events: none; }
+.trip-map-fallback { will-change: width, height, transform; pointer-events: none; transition: opacity .15s linear; }
 .map-gesture-hint { position: absolute; top: .6rem; left: 50%; z-index: 5; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.85); background: rgba(24,56,47,.88); padding: .28rem .55rem; color: #fff9d2; font: 700 .6rem "Courier New",monospace; white-space: nowrap; box-shadow: 2px 2px 0 rgba(9,20,17,.35); pointer-events: none; }
 .map-tip-mobile { display: none; }
 @media (max-width: 639px) {
