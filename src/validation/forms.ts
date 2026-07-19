@@ -31,5 +31,6 @@ export const journalEntrySchema = z.object({
   newNationalParksVisited: nonnegativeInteger,
   tanksOfGas: nonnegativeNumber,
   notificationHook: z.string().trim().max(180).optional().default(""),
+  sendNotification: z.preprocess((value) => value === "on", z.boolean()),
   body: z.string().trim().min(1, "Write the journal entry body."),
 });

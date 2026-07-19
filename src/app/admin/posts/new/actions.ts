@@ -23,7 +23,7 @@ export async function publishJournalEntry(
 
   const value = parsed.data;
   const supabase = await createClient();
-  const { error } = await supabase.rpc("publish_journal_entry", {
+  const { error } = await supabase.rpc("publish_journal_entry_and_notify", {
     p_slug: makeSlug(value.title),
     p_title: value.title,
     p_entry_date: value.entryDate,
@@ -38,6 +38,7 @@ export async function publishJournalEntry(
     p_tanks_of_gas: value.tanksOfGas,
     p_notification_hook: value.notificationHook,
     p_body: value.body,
+    p_send_notification: value.sendNotification,
   });
 
   if (error) return { message: error.message };
