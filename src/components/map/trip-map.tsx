@@ -189,7 +189,7 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
   }, [compact, mapReady, selectedLoop]);
 
   return <div className={`trip-map-shell relative overflow-hidden ${compact ? "trip-map-shell-compact h-72 rounded-3xl bg-[#d9ddd5]" : "trip-map-shell-main h-[62vh] min-h-[500px] max-h-[760px] rounded-[1.75rem] bg-[#d6e2e3] sm:min-h-[560px]"}`}>
-    {!compact && <div ref={fallbackMap} aria-hidden="true" className={`trip-map-fallback absolute left-0 top-0 z-0 h-full w-full bg-contain bg-center bg-no-repeat ${mapReady && !mapError ? "opacity-0" : "opacity-100"}`} style={{ backgroundImage: `url('/data/planned-routes-loop-${selectedLoop}-selected.svg?v=van-nav-5')` }} />}
+    {!compact && <div ref={fallbackMap} aria-hidden="true" className="trip-map-fallback absolute left-0 top-0 z-0 h-full w-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/data/planned-routes-loop-${selectedLoop}-selected.svg?v=van-nav-6')` }} />}
     <div ref={container} className="trip-map-canvas absolute inset-0 z-[1]" aria-label={compact ? "Map showing this journal entry location" : "Interactive map of the planned and completed road trip route"} />
     {!compact && <div aria-hidden="true" className="map-gesture-hint"><span className="map-tip-desktop">Drag to move · Scroll to zoom</span><span className="map-tip-mobile">Use two fingers to move or zoom · One finger scrolls the page</span></div>}
     {mapError && <div role="status" className="absolute inset-x-4 top-4 z-10 rounded-xl bg-white/95 p-4 text-sm shadow-lg"><strong>Route preview.</strong> {mapError}</div>}
