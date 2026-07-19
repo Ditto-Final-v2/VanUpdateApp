@@ -41,7 +41,7 @@ body {
 .page-shell { width: min(100% - 1.25rem, 72rem); }
 .site-header { border-bottom: 3px ridge #172d27; background: linear-gradient(#35584d, #213d35); box-shadow: 0 3px 0 rgba(10,20,17,.35); }
 .site-logo { display: flex; align-items: center; gap: .65rem; color: #f1f0e4; font: 700 1.15rem Georgia, serif; text-shadow: 1px 1px #10231e; }
-.site-logo > span:first-child { color: #d56a24; font-size: 1.35rem; }
+.site-van-logo { width: 3rem; height: auto; flex: 0 0 auto; overflow: visible; filter: drop-shadow(1px 1px 0 rgba(255,255,255,.18)) drop-shadow(1px 2px 1px rgba(7,14,12,.65)); }
 .site-logo small { display: block; margin-top: .1rem; color: #bdcbc2; font: 700 .57rem "Trebuchet MS", sans-serif; letter-spacing: .16em; }
 .site-header > div > button { color: #edf1e8; }
 .nav-link { border: 2px outset #52675f; background: linear-gradient(#425b52, #2c463d); padding: .42rem .75rem; color: #edf1e8; font: 700 .72rem Verdana, sans-serif; text-transform: uppercase; }
@@ -52,8 +52,15 @@ body {
 .retro-titlebar, .retro-section-head { background: linear-gradient(90deg, #1c3a32, #405e53); color: white; font: 700 .72rem Verdana, sans-serif; letter-spacing: .08em; text-shadow: 1px 1px #101f1b; }
 .retro-titlebar { display: flex; justify-content: space-between; padding: .38rem .55rem; }
 .retro-hero-body { padding: clamp(1.5rem, 5vw, 3.5rem); background: radial-gradient(circle at 90% 20%, rgba(142,156,134,.3), transparent 27%), #e5e8e1; }
-.retro-trip-badge { display: inline-flex; align-items: center; gap: .5rem; margin-bottom: 1rem; border: 2px outset #948fc4; background: linear-gradient(#655aab, #40367e); padding: .38rem .65rem; color: #fff; font: 700 .72rem "Courier New", monospace; letter-spacing: .12em; text-shadow: 1px 1px #241d54; box-shadow: 3px 3px 0 #59645f; }
+.retro-trip-badge { display: inline-flex; align-items: center; gap: .5rem; margin-bottom: 1rem; border: 2px outset #a56592; background: linear-gradient(90deg,#6d2458,#37245c); padding: .38rem .65rem; color: #fff; font: 700 .72rem "Courier New", monospace; letter-spacing: .12em; text-shadow: 1px 1px #241d54; box-shadow: 3px 3px 0 #59645f; }
 .retro-trip-badge span { color: #ffdc73; }
+.retro-trip-formula { margin-top: 1rem; border: 2px inset #91a099; background: #20332d; padding: .75rem 1rem .9rem; font-family: "Courier New",monospace; box-shadow: inset 0 0 0 2px #3f554d; }
+.retro-formula-label { margin-bottom: .45rem; color: #89da9d; font-size: .6rem; font-weight: 700; letter-spacing: .12em; }
+.retro-formula-input { color: #e4e8df; font-size: clamp(.68rem,1.6vw,.85rem); font-weight: 700; line-height: 1.65; text-align: center; }
+.retro-formula-input b { margin-inline: .25em; color: #f09bce; font-size: 1.05em; }
+.retro-formula-rule { margin: .5rem 0; border-top: 2px dotted #70857c; }
+.retro-formula-output { color: #fff2a8; font-size: clamp(.8rem,2vw,1rem); font-weight: 800; line-height: 1.4; text-align: center; text-shadow: 1px 1px #101f1b; }
+.retro-formula-output span { margin-right: .4rem; color: #f09bce; font-size: 1.2em; }
 .retro-statusbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .4rem 1rem; border-top: 2px groove #83958b; background: #cbd1ca; padding: .32rem .55rem; color: #29483f; font: 700 .61rem "Courier New", monospace; }
 .retro-stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 2px inset #91a099; background: #b7c0b8; box-shadow: inset 0 0 0 2px #dfe4dd; }
 .retro-stat { min-width: 0; padding: .65rem .35rem; text-align: center; }
@@ -104,3 +111,18 @@ body {
 .site-footer a:hover { color: #fff4be; }
 .retro-valid { display: inline-block; border: 1px solid #29565c; background: #effcf8; padding: .2rem .35rem; color: #29565c; font: 700 .58rem "Courier New", monospace; }
 .maplibregl-ctrl-group { border-radius: 0 !important; border: 2px outset #ddd !important; }
+.trip-map-canvas { touch-action: none; }
+.trip-map-fallback { transform-origin: 0 0; will-change: transform; pointer-events: none; }
+.map-gesture-hint { position: absolute; top: .6rem; left: 50%; z-index: 5; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.85); background: rgba(24,56,47,.88); padding: .28rem .55rem; color: #fff9d2; font: 700 .6rem "Courier New",monospace; white-space: nowrap; box-shadow: 2px 2px 0 rgba(9,20,17,.35); pointer-events: none; }
+@media (max-width: 639px) {
+  .trip-map-shell-main { height: 72vh !important; min-height: 560px !important; max-height: 700px !important; }
+  .map-loop-key { bottom: 3.6rem !important; left: .5rem !important; width: min(13.5rem, calc(100% - 1rem)) !important; padding: .55rem !important; font-size: .62rem !important; }
+  .map-loop-key button { padding: .4rem .5rem !important; }
+  .map-loop-key p { margin-bottom: .35rem; }
+  .map-van-key { right: .5rem !important; bottom: .5rem !important; padding: .3rem .5rem !important; font-size: .62rem !important; }
+  .van-key-icon { width: 32px; height: 20px; }
+  .trip-marker { width: 1.8rem; height: 2.2rem; border-width: 2px; }
+  .trip-marker span { font-size: .58rem; }
+  .current-van-marker { width: 40px; height: 27px; }
+  .maplibregl-ctrl-top-right { top: 1.8rem; }
+}
