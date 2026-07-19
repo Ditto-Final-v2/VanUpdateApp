@@ -111,9 +111,10 @@ body {
 .site-footer a:hover { color: #fff4be; }
 .retro-valid { display: inline-block; border: 1px solid #29565c; background: #effcf8; padding: .2rem .35rem; color: #29565c; font: 700 .58rem "Courier New", monospace; }
 .maplibregl-ctrl-group { border-radius: 0 !important; border: 2px outset #ddd !important; }
-.trip-map-canvas { touch-action: none; }
+.trip-map-canvas { touch-action: auto; }
 .trip-map-fallback { transform-origin: 0 0; will-change: transform; pointer-events: none; }
 .map-gesture-hint { position: absolute; top: .6rem; left: 50%; z-index: 5; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.85); background: rgba(24,56,47,.88); padding: .28rem .55rem; color: #fff9d2; font: 700 .6rem "Courier New",monospace; white-space: nowrap; box-shadow: 2px 2px 0 rgba(9,20,17,.35); pointer-events: none; }
+.map-tip-mobile { display: none; }
 @media (max-width: 639px) {
   .trip-map-shell-main { height: 72vh !important; min-height: 560px !important; max-height: 700px !important; }
   .map-loop-key { bottom: 3.6rem !important; left: .5rem !important; width: min(13.5rem, calc(100% - 1rem)) !important; padding: .55rem !important; font-size: .62rem !important; }
@@ -125,4 +126,7 @@ body {
   .trip-marker span { font-size: .58rem; }
   .current-van-marker { width: 40px; height: 27px; }
   .maplibregl-ctrl-top-right { top: 1.8rem; }
+  .map-gesture-hint { width: calc(100% - 5.5rem); white-space: normal; text-align: center; line-height: 1.3; }
+  .map-tip-desktop { display: none; }
+  .map-tip-mobile { display: inline; }
 }
