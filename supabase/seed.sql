@@ -1,0 +1,3 @@
+-- Seed data will be added when the local mock posts are migrated in Phase 2.
+-- Keep administrator creation out of committed seed files; add the hosted auth
+-- user UUID to public.app_admins through the Supabase SQL editor.

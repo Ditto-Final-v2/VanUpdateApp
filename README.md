@@ -67,6 +67,12 @@ Deploy directly to Vercel after adding the environment variables in project sett
 
 Create a Supabase project, apply the design in `docs/database-schema.md`, enable RLS before importing data, configure Auth and Storage, then replace local selectors with server-side Supabase queries. Follow `docs/notifications.md` for Resend domain verification and idempotent sending. Follow `docs/comments.md` before enabling public submissions.
 
+The local Supabase project, initial SQL migration, RLS policies, private photo
+bucket, and SSR client utilities are now scaffolded. Follow
+`docs/supabase-setup.md` to create/link the hosted project or run the stack
+locally with Docker Desktop. Public pages intentionally continue to use mock
+data until admin authentication and data migration are implemented.
+
 ## Known limitations
 
 - All content resets on reload and form submissions are simulations.
