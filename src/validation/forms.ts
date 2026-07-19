@@ -34,3 +34,5 @@ export const journalEntrySchema = z.object({
   sendNotification: z.preprocess((value) => value === "on", z.boolean()),
   body: z.string().trim().min(1, "Write the journal entry body."),
 });
+
+export const journalEditSchema = journalEntrySchema.extend({ status: z.enum(["draft", "published"]) });
