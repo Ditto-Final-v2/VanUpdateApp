@@ -1,0 +1,2 @@
+"use client";
+export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) { return <div className="readable-surface page-shell my-12 py-20 text-center"><p className="text-sm font-bold uppercase tracking-wider text-terracotta">A bump in the road</p><h1 className="mt-3 font-serif text-5xl font-semibold text-forest">This page didn’t load.</h1><p className="mt-4 text-stone-600">Try again, or return home and take another route.</p><button onClick={reset} className="button-primary mt-8">Try again</button></div>; }

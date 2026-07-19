@@ -1,65 +1,20 @@
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, MapPin, Route } from "lucide-react";
+import { TripMap } from "@/components/map/trip-map";
+import { PostCard } from "@/components/blog/post-card";
+import { SubscribeForm } from "@/components/forms/subscribe-form";
+import { siteConfig } from "@/config/site";
+import { publishedPosts } from "@/lib/posts";
+import { formatDate } from "@/lib/utils";
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+  const latest = publishedPosts[0];
+  return <>
+    <section className="retro-hero page-shell mt-6 sm:mt-10"><div className="retro-titlebar"><span>ROAD_LOG.HTML</span><span>— □ ×</span></div><div className="retro-hero-body"><div><p className="retro-trip-badge"><span aria-hidden="true">★</span> 5 MONTH ROAD TRIP <span aria-hidden="true">★</span></p><h1 className="font-serif text-[clamp(2.8rem,8vw,6.2rem)] font-semibold leading-[.96] tracking-[-.035em] text-forest">{siteConfig.tripName}</h1><div className="retro-stats-grid mt-8" aria-label="Trip statistics">{siteConfig.tripStats.map((stat) => <div className="retro-stat" key={stat.label}><strong>{stat.value}</strong><span>{stat.label}</span></div>)}</div></div></div><div className="retro-statusbar"><span>● ONLINE FROM EL PASO</span><span>YOU ARE VISITOR #001432</span></div></section>
+    <section id="route" className="retro-window page-shell mt-7 scroll-mt-24"><div className="retro-section-head flex flex-wrap items-center justify-between gap-3"><h2>★ Follow the journey</h2><p className="retro-current flex items-center gap-2"><span className="h-2 w-2 animate-pulse rounded-full bg-[#33cc66]" />{siteConfig.tripStatus}</p></div><div className="p-2 sm:p-3"><TripMap posts={publishedPosts} /></div></section>
+    <section className="readable-surface page-shell my-12 py-8 sm:my-16 sm:py-10" aria-labelledby="latest-heading"><div className="retro-section-label mb-4"><span>NEW!</span> Fresh from the road</div><h2 id="latest-heading" className="mb-5 font-serif text-3xl font-semibold text-forest sm:text-4xl">Most recent entry</h2><article className="retro-feature grid overflow-hidden bg-white lg:grid-cols-[1.15fr_.85fr]"><div className="relative min-h-72 lg:min-h-[470px]"><Image src={latest.coverImage} alt={latest.coverImageAlt} fill sizes="(max-width: 1024px) 100vw, 60vw" className="object-cover" priority /></div><div className="flex flex-col justify-center p-7 sm:p-10 lg:p-12"><p className="text-xs font-bold uppercase tracking-[.14em] text-sage">Day {latest.tripDay} · {formatDate(latest.entryDate)}</p><h3 className="mt-4 font-serif text-4xl font-semibold leading-tight text-forest">{latest.title}</h3><p className="mt-4 flex items-center gap-2 text-sm font-semibold text-stone-500"><MapPin size={16} />{latest.locationName}</p><p className="mt-5 text-lg leading-8 text-stone-600">{latest.excerpt}</p><Link href={`/journal/${latest.slug}`} className="button-primary mt-7 self-start gap-2">Read full entry <ArrowRight size={17} /></Link></div></article></section>
+    <section id="journal" className="retro-journal scroll-mt-24 py-14 sm:py-20"><div className="page-shell"><div className="mb-8 max-w-2xl"><p className="retro-section-label inline-block">{">> NOTES ALONG THE WAY"}</p><h2 className="mt-3 font-serif text-4xl font-semibold text-forest sm:text-5xl">The road journal</h2><p className="mt-4 text-lg leading-8 text-stone-600">Small moments, long views, and honest notes from life between stops.</p></div><div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{publishedPosts.slice(1).map((post) => <PostCard post={post} key={post.id} />)}</div></div></section>
+    <section id="subscribe" className="page-shell scroll-mt-24 py-14 sm:py-20"><div className="retro-subscribe relative overflow-hidden px-6 py-10 sm:px-12"><Route className="absolute -right-8 -top-8 h-48 w-48 rotate-12 text-white/20" strokeWidth={1} /><div className="relative max-w-3xl"><p className="text-xs font-bold uppercase tracking-[.18em] text-forest/70">POSTCARDS.EXE</p><h2 className="mt-2 font-serif text-4xl font-semibold text-forest">Get the next entry by email.</h2><p className="mb-8 mt-4 max-w-2xl leading-7 text-stone-700">One short note whenever a new story is published. No schedules, no marketing, and an easy unsubscribe whenever you like.</p><SubscribeForm /></div></div></section>
+  </>;
 }

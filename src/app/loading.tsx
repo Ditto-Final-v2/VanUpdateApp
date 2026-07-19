@@ -1,0 +1,1 @@
+export default function Loading() { return <div className="readable-surface page-shell my-10 py-12"><div className="h-5 w-32 animate-pulse rounded bg-stone-200"/><div className="mt-6 h-24 max-w-3xl animate-pulse rounded-2xl bg-stone-200"/><div className="mt-10 h-[55vh] animate-pulse rounded-[2rem] bg-stone-200"/><span className="sr-only">Loading page…</span></div>; }

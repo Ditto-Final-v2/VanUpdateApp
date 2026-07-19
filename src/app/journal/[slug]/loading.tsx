@@ -1,0 +1,1 @@
+export default function LoadingPost() { return <div className="readable-surface page-shell my-10 animate-pulse py-12"><div className="mx-auto h-4 w-40 rounded bg-stone-200"/><div className="mx-auto mt-6 h-16 max-w-3xl rounded bg-stone-200"/><div className="mt-12 aspect-[16/9] rounded-[2rem] bg-stone-200"/><p className="sr-only">Loading journal entry…</p></div>; }

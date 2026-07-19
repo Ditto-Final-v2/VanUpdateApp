@@ -1,0 +1,65 @@
+import type { TripPost } from "@/types";
+
+export const posts: TripPost[] = [
+  {
+    id: "post-006", slug: "red-rock-mornings-in-moab", title: "Red Rock Mornings in Moab",
+    excerpt: "A sunrise hike, a stubborn camp stove, and the kind of silence that makes you stop checking the time.",
+    body: [
+      "I woke before the alarm because the canyon walls had started to glow. The van was cold, the coffee took forever, and everything outside the sliding door looked painted in rust and peach.",
+      "By seven I was on the trail, sharing the switchbacks with two ravens and nobody else. Delicate Arch appeared slowly around the last bend—larger, stranger, and much quieter than any photograph suggests.",
+      "The afternoon was for ordinary road-life things: laundry in town, topping off water, and persuading the camp stove to cooperate. By sunset, the whole horizon softened again. Moab has a way of making even the chores feel cinematic.",
+    ], entryDate: "2026-04-21", publishedAt: "2026-04-21T19:30:00Z", locationName: "Moab, Utah",
+    latitude: 38.5733, longitude: -109.5498,
+    coverImage: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=85",
+    coverImageAlt: "Sunrise warming a red-rock desert landscape",
+    photos: [
+      { src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=85", alt: "Layered mountain and desert landscape", caption: "The long view from the morning trail." },
+      { src: "https://images.unsplash.com/photo-1473445361085-b9a07f55608b?auto=format&fit=crop&w=1200&q=85", alt: "Camp among trees in warm evening light", caption: "Home for the night, just before dinner." },
+    ], notificationTitle: "A red-rock morning from Moab", status: "published", tripDay: 18, mileageToDate: 1432,
+  },
+  {
+    id: "post-005", slug: "under-the-stars-at-capitol-reef", title: "Under the Stars at Capitol Reef",
+    excerpt: "Orchards, sandstone folds, and my clearest night sky of the trip so far.",
+    body: ["The road into Capitol Reef runs between stone walls that seem to lean closer with every mile. I arrived in time to walk through the old orchards and buy a small pie from the historic district.", "After dark, the temperature dropped fast. I wrapped up in every layer I owned and watched the Milky Way sharpen above the van. No signal, no schedule, just stars."],
+    entryDate: "2026-04-18", publishedAt: "2026-04-18T20:00:00Z", locationName: "Capitol Reef National Park, Utah", latitude: 38.2919, longitude: -111.2615,
+    coverImage: "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=1800&q=85", coverImageAlt: "Warm sunlight filtering into a quiet forest",
+    photos: [{ src: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1200&q=85", alt: "Van beside a mountain lake", caption: "A roadside pause worth keeping." }],
+    notificationTitle: "Stars over Capitol Reef", status: "published", tripDay: 15, mileageToDate: 1196,
+  },
+  {
+    id: "post-004", slug: "slow-day-in-zion", title: "A Slow Day in Zion",
+    excerpt: "Trading ambitious trail plans for riverside coffee and a quieter corner of the canyon.",
+    body: ["The shuttle was already full of hikers when I climbed aboard, but the canyon still felt calm. I skipped the biggest trail on my list and followed the river instead.", "It turned out to be exactly the day I needed: a long lunch, bare feet in cold water, and nowhere else to be."],
+    entryDate: "2026-04-14", publishedAt: "2026-04-14T18:45:00Z", locationName: "Zion National Park, Utah", latitude: 37.2982, longitude: -113.0263,
+    coverImage: "https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1800&q=85", coverImageAlt: "A hiker looking into a sunlit canyon",
+    photos: [{ src: "https://images.unsplash.com/photo-1443632864897-14973fa006cf?auto=format&fit=crop&w=1200&q=85", alt: "Rocky river running through a canyon", caption: "Following the river upstream." }],
+    notificationTitle: "Taking it slow in Zion", status: "published", tripDay: 11, mileageToDate: 930,
+  },
+  {
+    id: "post-003", slug: "two-nights-in-sedona", title: "Two Nights in Sedona",
+    excerpt: "Red cliffs, dusty shoes, and an unexpectedly excellent parking-lot breakfast.",
+    body: ["Sedona announced itself in a sudden wall of red beyond the highway. I found a camp spot before dusk and watched the last light move across the cliffs.", "The next morning brought a trail, a flat tire on the bike, and breakfast cooked beside the grocery store. Van life is glamorous in very specific ways."],
+    entryDate: "2026-04-09", publishedAt: "2026-04-09T17:20:00Z", locationName: "Sedona, Arizona", latitude: 34.8697, longitude: -111.761,
+    coverImage: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=1800&q=85", coverImageAlt: "Sunlight shining through green leaves",
+    photos: [{ src: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=85", alt: "Desert road winding between red hills", caption: "The road north into red-rock country." }],
+    notificationTitle: "Hello from Sedona", status: "published", tripDay: 6, mileageToDate: 612,
+  },
+  {
+    id: "post-002", slug: "white-sands-and-blue-skies", title: "White Sands & Blue Skies",
+    excerpt: "The first real detour delivered gypsum dunes, a windy lunch, and sand in absolutely everything.",
+    body: ["I left Las Cruces under a cloudless sky and reached the dunes before the heat set in. White Sands is wonderfully disorienting: all the shapes of a desert, none of the expected color.", "I stayed until the wind picked up, then made lunch behind the van as shelter. I will be finding gypsum in the floorboards for months."],
+    entryDate: "2026-04-05", publishedAt: "2026-04-05T19:05:00Z", locationName: "White Sands National Park, New Mexico", latitude: 32.7791, longitude: -106.171,
+    coverImage: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=1800&q=85", coverImageAlt: "Pale desert dunes under a blue sky",
+    photos: [{ src: "https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&w=1200&q=85", alt: "Desert dunes at golden hour", caption: "Late light across the gypsum." }],
+    notificationTitle: "A bright day at White Sands", status: "published", tripDay: 2, mileageToDate: 118,
+  },
+  {
+    id: "post-001", slug: "rolling-out-of-el-paso", title: "Rolling Out of El Paso",
+    excerpt: "The cupboards are latched, the water tank is full, and the road finally begins.",
+    body: ["After weeks of lists, repairs, and moving the same box three times, I finally pointed the van north. El Paso disappeared in the mirrors under a huge west Texas sky.", "The first night was close to home by design. I cooked something simple, checked every latch twice, and listened to the wind. Tomorrow, the wandering begins."],
+    entryDate: "2026-04-04", publishedAt: "2026-04-04T18:00:00Z", locationName: "El Paso, Texas", latitude: 31.7619, longitude: -106.485,
+    coverImage: "https://images.unsplash.com/photo-1527786356703-4b100091cd2c?auto=format&fit=crop&w=1800&q=85", coverImageAlt: "Camper van parked on an open desert road",
+    photos: [{ src: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=85", alt: "Vehicle driving an open road", caption: "The first miles out of town." }],
+    notificationTitle: "The trip begins", status: "published", tripDay: 1, mileageToDate: 0,
+  },
+];

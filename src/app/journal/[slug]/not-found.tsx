@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function NotFound() { return <div className="readable-surface page-shell my-12 py-20 text-center"><p className="text-sm font-bold uppercase tracking-wider text-terracotta">404 · Wrong turn</p><h1 className="mt-3 font-serif text-5xl font-semibold text-forest">That entry isn’t on the map.</h1><p className="mt-4 text-stone-600">It may have moved, or it might still be a draft.</p><Link className="button-primary mt-8" href="/#journal">Return to the journal</Link></div>; }
