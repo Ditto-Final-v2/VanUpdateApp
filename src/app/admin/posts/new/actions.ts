@@ -25,7 +25,7 @@ export async function publishJournalEntry(
   const photoPaths = formData.getAll("uploadedPhotoPath").filter((path): path is string => typeof path === "string");
   const coverPhotoPath = formData.get("coverPhotoPath");
   const supabase = await createClient();
-  const { error } = await supabase.rpc("publish_journal_entry_with_photos", {
+  const { data, error } = await supabase.rpc("publish_journal_entry_with_photos", {
     p_slug: makeSlug(value.title),
     p_title: value.title,
     p_entry_date: value.entryDate,
@@ -46,6 +46,13 @@ export async function publishJournalEntry(
   });
 
   if (error) return { message: error.message };
+  const postId = data?.[0]?.post_id;
+  if (postId) {
+    const { error: locationError } = await supabase.from("posts").update({ latitude:value.latitude, longitude:value.longitude, loop_number:value.loopNumber }).eq("id",postId);
+    if (locationError) return { message:locationError.message };
+    const {data:latest}=await supabase.from("posts").select("id").eq("status","published").order("entry_date",{ascending:false}).order("published_at",{ascending:false}).limit(1).maybeSingle();
+    if(latest?.id===postId)await supabase.from("trips").update({ current_location_name:value.locationName,current_latitude:value.latitude,current_longitude:value.longitude,active_loop:value.loopNumber }).eq("status","active");
+  }
   revalidatePath("/");
   revalidatePath("/admin/posts");
   redirect("/admin/posts");

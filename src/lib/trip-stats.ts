@@ -32,3 +32,6 @@ export async function getTripStats() {
     return siteConfig.tripStats;
   }
 }
+
+export interface TripMapState { currentLocationName:string;latitude:number;longitude:number;activeLoop:1|2 }
+export async function getTripMapState():Promise<TripMapState>{try{const supabase=await createClient();const {data}=await supabase.from("trips").select("current_location_name,current_latitude,current_longitude,active_loop").eq("status","active").limit(1).maybeSingle();if(data?.current_latitude!=null&&data.current_longitude!=null)return{currentLocationName:data.current_location_name??"Current location",latitude:data.current_latitude,longitude:data.current_longitude,activeLoop:data.active_loop as 1|2};}catch{}return{currentLocationName:"El Paso, TX",latitude:31.820633,longitude:-106.546623,activeLoop:1};}

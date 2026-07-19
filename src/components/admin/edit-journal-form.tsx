@@ -5,6 +5,7 @@ import { useActionState, useEffect, useState, useTransition } from "react";
 import { updatePost, type EditPostState } from "@/app/admin/posts/[id]/edit/actions";
 import { createClient } from "@/lib/supabase/client";
 import type { AdminPost } from "@/lib/posts";
+import { LocationFields } from "@/components/admin/location-fields";
 
 const initialState: EditPostState = { message:"" };
 const metrics = [["milesWalked","Miles Walked","0.1"],["milesRan","Miles Ran","0.1"],["milesBiked","Miles Biked","0.1"],["majorCitiesVisited","Major Cities Visited","1"],["newStatesVisited","New States Visited","1"],["newNationalParksVisited","New National Parks Visited","1"],["tanksOfGas","Tanks of Gas","0.1"]] as const;
@@ -34,7 +35,7 @@ export function EditJournalForm({ post }: { post:AdminPost }) {
   const busy=pending||uploading;
   return <form onSubmit={submit} className="mt-8 grid gap-5 border-2 border-forest bg-white p-5 shadow-[5px_5px_0_#1f352d] sm:grid-cols-2 sm:p-7"><input type="hidden" name="postId" value={post.id}/>
     <Field name="title" label="Title" defaultValue={post.title} required/><Field name="entryDate" label="Entry Date" type="date" defaultValue={post.entryDate} required/>
-    <Field name="locationName" label="Location Name" defaultValue={post.locationName} required/><Field name="vanMileage" label="Current Van Mileage" type="number" min="0" step="1" defaultValue={post.vanMileage} required/>
+    <Field name="locationName" label="Location Name" defaultValue={post.locationName} required/><LocationFields latitude={post.latitude} longitude={post.longitude} loopNumber={post.loopNumber}/><Field name="vanMileage" label="Current Van Mileage" type="number" min="0" step="1" defaultValue={post.vanMileage} required/>
     {metrics.map(([name,label,step])=><Field key={name} name={name} label={label} type="number" min="0" step={step} defaultValue={values[name]} required/>)}
     <div className="sm:col-span-2"><label className="form-label" htmlFor="notificationHook">Notification Hook</label><input className="form-input mt-2" id="notificationHook" name="notificationHook" defaultValue={post.notificationHook} maxLength={180}/></div>
     <div><label className="form-label" htmlFor="status">Publication status</label><select className="form-input mt-2" id="status" name="status" defaultValue={post.status}><option value="published">Published</option><option value="draft">Draft / hidden</option></select></div>

@@ -7,13 +7,14 @@ import { MapPin } from "lucide-react";
 import { siteConfig } from "@/config/site";
 import type { TripPost } from "@/types";
 import { formatDate } from "@/lib/utils";
+import type { TripMapState } from "@/lib/trip-stats";
 
-interface TripMapProps { posts: TripPost[]; compact?: boolean; center?: [number, number]; }
+interface TripMapProps { posts: TripPost[]; compact?: boolean; center?: [number, number]; tripState?:TripMapState }
 
 type LoopId = 1 | 2;
 
 const loopColors = { 1: "#d56a24", 2: "#2f78a8" } as const;
-const currentLocation: [number, number] = [-106.546623, 31.820633];
+function milesBetween(a:[number,number],b:[number,number]){const rad=Math.PI/180;const dLat=(b[1]-a[1])*rad;const dLng=(b[0]-a[0])*rad;const x=Math.sin(dLat/2)**2+Math.cos(a[1]*rad)*Math.cos(b[1]*rad)*Math.sin(dLng/2)**2;return 3958.8*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 
 const loopConfig = {
   1: {
@@ -30,8 +31,8 @@ const loopConfig = {
   },
 } as const;
 
-export function TripMap({ posts, compact = false, center }: TripMapProps) {
-  const container = useRef<HTMLDivElement>(null); const map = useRef<maplibregl.Map | null>(null); const vanArt = useRef<HTMLSpanElement>(null); const [selectedPost, setSelectedPost] = useState<TripPost | null>(null); const [selectedLoop, setSelectedLoop] = useState<LoopId>(1); const [mapReady, setMapReady] = useState(false); const [mapError, setMapError] = useState<string | null>(null);
+export function TripMap({ posts, compact = false, center,tripState }: TripMapProps) {
+  const container = useRef<HTMLDivElement>(null); const map = useRef<maplibregl.Map | null>(null); const vanArt = useRef<HTMLSpanElement>(null); const [selectedPost, setSelectedPost] = useState<TripPost | null>(null); const [selectedLoop, setSelectedLoop] = useState<LoopId>(tripState?.activeLoop??1); const [mapReady, setMapReady] = useState(false); const [mapError, setMapError] = useState<string | null>(null);
   useEffect(() => {
     if (!container.current || map.current) return;
     let instance: maplibregl.Map;
@@ -43,26 +44,29 @@ export function TripMap({ posts, compact = false, center }: TripMapProps) {
     }
     map.current = instance; instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right"); instance.addControl(new maplibregl.AttributionControl({ compact: true }), compact ? "bottom-right" : "top-left");
     const loadTimeout = window.setTimeout(() => setMapError("Interactive map is taking too long to load. Showing the route preview instead."), 8000);
-    instance.on("load", () => {
+    instance.on("load", async () => {
       window.clearTimeout(loadTimeout);
       if (!compact) {
-        ([1, 2] as const).forEach((loop) => {
+        await Promise.all(([1, 2] as const).map(async (loop) => {
           instance.addSource(`planned-loop-${loop}`, { type: "geojson", data: loopConfig[loop].routeUrl });
-          instance.addLayer({ id: `planned-loop-${loop}`, type: "line", source: `planned-loop-${loop}`, paint: { "line-color": loopColors[loop], "line-width": loop === 1 ? 4 : 3, "line-opacity": loop === 1 ? 1 : .28, "line-dasharray": loop === 1 ? [2, 2] : [1.5, 2.5] } });
-          instance.addSource(`planned-stops-${loop}`, { type: "geojson", data: loopConfig[loop].stopsUrl });
-          instance.addLayer({ id: `planned-stop-markers-${loop}`, type: "circle", source: `planned-stops-${loop}`, layout: { visibility: loop === 1 ? "visible" : "none" }, paint: { "circle-color": ["case", ["boolean", ["get", "completed"], false], "#7c3aed", "#8b1e1e"], "circle-radius": 5, "circle-stroke-color": "#fffdf8", "circle-stroke-width": 2 } });
-          instance.addLayer({ id: `planned-stop-labels-${loop}`, type: "symbol", source: `planned-stops-${loop}`, layout: { visibility: loop === 1 ? "visible" : "none", "text-field": ["get", "name"], "text-size": 15, "text-font": ["Noto Sans Regular"], "text-variable-anchor": ["top", "bottom", "left", "right"], "text-radial-offset": .9, "text-padding": 4, "text-justify": "auto" }, paint: { "text-color": "#263f37", "text-halo-color": "#fffdf8", "text-halo-width": 2 } });
-        });
+          const active=loop===(tripState?.activeLoop??1);instance.addLayer({ id: `planned-loop-${loop}`, type: "line", source: `planned-loop-${loop}`, paint: { "line-color": loopColors[loop], "line-width": active ? 4 : 3, "line-opacity": active ? 1 : .28, "line-dasharray": active ? [2, 2] : [1.5, 2.5] } });
+          const stops=await fetch(loopConfig[loop].stopsUrl).then((response)=>response.json()) as GeoJSON.FeatureCollection<GeoJSON.Point>;
+          const checkpoints=posts.filter((post)=>(post.loopNumber??1)===loop).map((post)=>[post.longitude,post.latitude] as [number,number]);stops.features.forEach((stop)=>{stop.properties={...stop.properties,completed:checkpoints.some((point)=>milesBetween(point,stop.geometry.coordinates as [number,number])<=30)}});
+          instance.addSource(`planned-stops-${loop}`, { type: "geojson", data:stops });
+          instance.addLayer({ id: `planned-stop-markers-${loop}`, type: "circle", source: `planned-stops-${loop}`, layout: { visibility: active ? "visible" : "none" }, paint: { "circle-color": ["case", ["boolean", ["get", "completed"], false], "#7c3aed", "#8b1e1e"], "circle-radius": 5, "circle-stroke-color": "#fffdf8", "circle-stroke-width": 2 } });
+          instance.addLayer({ id: `planned-stop-labels-${loop}`, type: "symbol", source: `planned-stops-${loop}`, layout: { visibility: active ? "visible" : "none", "text-field": ["get", "name"], "text-size": 15, "text-font": ["Noto Sans Regular"], "text-variable-anchor": ["top", "bottom", "left", "right"], "text-radial-offset": .9, "text-padding": 4, "text-justify": "auto" }, paint: { "text-color": "#263f37", "text-halo-color": "#fffdf8", "text-halo-width": 2 } });
+          const traveled=posts.filter((post)=>(post.loopNumber??1)===loop).sort((a,b)=>a.entryDate.localeCompare(b.entryDate)).map((post)=>[post.longitude,post.latitude]);if(traveled.length>1){instance.addSource(`completed-loop-${loop}`,{type:"geojson",data:{type:"Feature",properties:{},geometry:{type:"LineString",coordinates:traveled}}});instance.addLayer({id:`completed-loop-${loop}`,type:"line",source:`completed-loop-${loop}`,layout:{visibility:active?"visible":"none"},paint:{"line-color":"#7c3aed","line-width":5,"line-opacity":.95}});}
+        }));
         const vanMarker = document.createElement("div");
         vanMarker.className = "current-van-marker";
         vanMarker.setAttribute("role", "img");
-        vanMarker.setAttribute("aria-label", "Current location: El Paso, Texas");
+        vanMarker.setAttribute("aria-label", `Current location: ${tripState?.currentLocationName??"El Paso, Texas"}`);
         const vanImage = document.createElement("span");
         vanImage.className = "current-van-art facing-left";
         vanMarker.appendChild(vanImage);
         vanArt.current = vanImage;
-        new maplibregl.Marker({ element: vanMarker, anchor: "bottom" }).setLngLat(currentLocation).addTo(instance);
-        instance.fitBounds(loopConfig[1].bounds, { padding: 55, maxZoom: 6, duration: 0 });
+        new maplibregl.Marker({ element: vanMarker, anchor: "bottom" }).setLngLat([tripState?.longitude??-106.546623,tripState?.latitude??31.820633]).addTo(instance);
+        instance.fitBounds(loopConfig[tripState?.activeLoop??1].bounds, { padding: 55, maxZoom: 6, duration: 0 });
         setMapReady(true);
       }
       posts.forEach((post) => {
@@ -71,7 +75,7 @@ export function TripMap({ posts, compact = false, center }: TripMapProps) {
     });
     instance.on("error", (event) => { if (event.error?.message?.includes("style")) setMapError("The interactive map style could not load. Showing the route preview instead."); });
     return () => { window.clearTimeout(loadTimeout); instance.remove(); map.current = null; };
-  }, [center, compact, posts]);
+  }, [center, compact, posts, tripState]);
 
   useEffect(() => {
     const instance = map.current;
@@ -84,6 +88,7 @@ export function TripMap({ posts, compact = false, center }: TripMapProps) {
       instance.setPaintProperty(`planned-loop-${loop}`, "line-dasharray", active ? [2, 2] : [1.5, 2.5]);
       instance.setLayoutProperty(`planned-stop-markers-${loop}`, "visibility", active ? "visible" : "none");
       instance.setLayoutProperty(`planned-stop-labels-${loop}`, "visibility", active ? "visible" : "none");
+      if(instance.getLayer(`completed-loop-${loop}`))instance.setLayoutProperty(`completed-loop-${loop}`,"visibility",active?"visible":"none");
     });
     vanArt.current?.classList.toggle("facing-left", selectedLoop === 1);
     instance.fitBounds(loopConfig[selectedLoop].bounds, { padding: 55, maxZoom: 6, duration: 500 });

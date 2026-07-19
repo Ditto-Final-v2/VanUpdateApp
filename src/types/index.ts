@@ -24,6 +24,7 @@ export interface TripPost {
   status: PostStatus;
   tripDay: number;
   mileageToDate: number;
+  loopNumber?: 1 | 2;
 }
 
 export type RouteGeoJSON = GeoJSON.Feature<GeoJSON.LineString>;

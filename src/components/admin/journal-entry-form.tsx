@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { publishJournalEntry, type JournalEntryState } from "@/app/admin/posts/new/actions";
 import { createClient } from "@/lib/supabase/client";
+import { LocationFields } from "@/components/admin/location-fields";
 
 const initialState: JournalEntryState = { message: "" };
 const metricFields = [
@@ -65,6 +66,7 @@ export function JournalEntryForm({ today }: { today: string }) {
     <Field name="title" label="Title" required />
     <Field name="entryDate" label="Entry Date" type="date" defaultValue={today} required />
     <Field name="locationName" label="Location Name" required />
+    <LocationFields />
     <Field name="vanMileage" label="Current Van Mileage" type="number" min="0" step="1" defaultValue="0" hint="Enter 0 to reuse the mileage from your most recent entry." required />
     {metricFields.map(([name, label, step]) => <Field key={name} name={name} label={label} type="number" min="0" step={step} defaultValue="0" required />)}
     <div className="sm:col-span-2"><label className="form-label" htmlFor="notificationHook">Notification Hook</label><input className="form-input mt-2" id="notificationHook" name="notificationHook" maxLength={180} placeholder="A short subject line that makes readers want to open the entry" /></div>

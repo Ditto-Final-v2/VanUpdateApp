@@ -1,0 +1,9 @@
+"use client";
+
+import { useState } from "react";
+
+export function LocationFields({latitude=31.820633,longitude=-106.546623,loopNumber=1}:{latitude?:number;longitude?:number;loopNumber?:number}) {
+  const [message,setMessage]=useState("");
+  function locate(){if(!navigator.geolocation){setMessage("Location is not available in this browser.");return;}setMessage("Finding your location…");navigator.geolocation.getCurrentPosition(({coords})=>{const lat=document.querySelector<HTMLInputElement>('[name="latitude"]');const lng=document.querySelector<HTMLInputElement>('[name="longitude"]');if(lat)lat.value=coords.latitude.toFixed(6);if(lng)lng.value=coords.longitude.toFixed(6);setMessage("Current phone location added.");},()=>setMessage("Location permission was not granted."),{enableHighAccuracy:true,timeout:15000});}
+  return <fieldset className="border-2 border-dashed border-sage p-4 sm:col-span-2"><legend className="px-2 text-sm font-bold uppercase text-forest">Map location</legend><div className="grid gap-4 sm:grid-cols-3"><div><label className="form-label" htmlFor="latitude">Latitude</label><input className="form-input" id="latitude" name="latitude" type="number" step="any" min="-90" max="90" defaultValue={latitude} required/></div><div><label className="form-label" htmlFor="longitude">Longitude</label><input className="form-input" id="longitude" name="longitude" type="number" step="any" min="-180" max="180" defaultValue={longitude} required/></div><div><label className="form-label" htmlFor="loopNumber">Trip loop</label><select className="form-input" id="loopNumber" name="loopNumber" defaultValue={loopNumber}><option value="1">Loop 1</option><option value="2">Loop 2</option></select></div></div><button type="button" onClick={locate} className="button-primary mt-4">Use my phone location</button>{message&&<p className="mt-2 text-xs font-bold text-stone-600">{message}</p>}</fieldset>;
+}

@@ -28,6 +28,9 @@ export async function updatePost(_state: EditPostState, formData: FormData): Pro
     p_cover_photo_path:typeof cover === "string" && cover ? cover : null,
   });
   if (error) return { message: error.message };
+  const { error:locationError } = await supabase.from("posts").update({latitude:v.latitude,longitude:v.longitude,loop_number:v.loopNumber}).eq("id",id);
+  if(locationError)return {message:locationError.message};
+  if(v.status==="published") { const {data:latest}=await supabase.from("posts").select("id").eq("status","published").order("entry_date",{ascending:false}).order("published_at",{ascending:false}).limit(1).maybeSingle();if(latest?.id===id)await supabase.from("trips").update({current_location_name:v.locationName,current_latitude:v.latitude,current_longitude:v.longitude,active_loop:v.loopNumber}).eq("status","active"); }
   if (removed.length) await supabase.storage.from("trip-photos").remove(removed);
   revalidatePath("/"); revalidatePath("/admin/posts"); revalidatePath(`/admin/posts/${id}/edit`);
   redirect("/admin/posts");
@@ -42,6 +45,8 @@ export async function deletePost(formData: FormData) {
   if (error) redirect(`/admin/posts/${id}/edit?error=${encodeURIComponent(error.message)}`);
   const paths = (photos ?? []).map((photo) => photo.storage_path);
   if (paths.length) await supabase.storage.from("trip-photos").remove(paths);
+  const {data:latest}=await supabase.from("posts").select("location_name,latitude,longitude,loop_number").eq("status","published").order("entry_date",{ascending:false}).order("published_at",{ascending:false}).limit(1).maybeSingle();
+  if(latest)await supabase.from("trips").update({current_location_name:latest.location_name,current_latitude:latest.latitude,current_longitude:latest.longitude,active_loop:latest.loop_number}).eq("status","active");
   revalidatePath("/"); revalidatePath("/admin/posts");
   redirect("/admin/posts");
 }
