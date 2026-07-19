@@ -17,7 +17,7 @@ export interface TripPost {
   locationName: string;
   latitude: number;
   longitude: number;
-  coverImage: string;
+  coverImage: string | null;
   coverImageAlt: string;
   photos: TripPhoto[];
   notificationTitle: string;
