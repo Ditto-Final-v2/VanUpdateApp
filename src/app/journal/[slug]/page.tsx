@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Gauge, MapPin } from "lucide-react";
 import { notFound } from "next/navigation";
-import { TripMap } from "@/components/map/trip-map";
 import { Comments } from "@/components/blog/comments";
 import { PostCover } from "@/components/blog/post-cover";
 import { SubscribeForm } from "@/components/forms/subscribe-form";
@@ -28,7 +27,6 @@ export default async function JournalPost({ params }: { params: Promise<{ slug: 
     <div className="page-shell relative aspect-[16/9] min-h-72 overflow-hidden border-2 border-forest"><PostCover src={post.coverImage} alt={post.coverImageAlt} priority /></div>
     <div className="mx-auto max-w-3xl px-5 py-14 sm:py-20"><div className="space-y-7 whitespace-pre-wrap font-serif text-[1.15rem] leading-9 text-stone-700 sm:text-xl">{post.body.map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>)}</div>
       {post.photos.length > 0 && <section className="mt-14" aria-labelledby="gallery-heading"><h2 id="gallery-heading" className="mb-6 font-serif text-3xl font-semibold text-forest">Scenes from the day</h2><div className="grid gap-5 sm:grid-cols-2">{post.photos.map((photo) => <figure key={photo.src}><div className="relative aspect-[4/3] overflow-hidden border-2 border-stone-300"><Image src={photo.src} alt={photo.alt} fill sizes="(max-width: 640px) 100vw, 400px" className="object-cover" /></div>{photo.caption && <figcaption className="mt-2 text-sm italic text-stone-500">{photo.caption}</figcaption>}</figure>)}</div></section>}
-      <section className="mt-14" aria-labelledby="location-heading"><h2 id="location-heading" className="mb-6 font-serif text-3xl font-semibold text-forest">Where I wrote this</h2><TripMap posts={[post]} compact center={[post.longitude, post.latitude]} /></section>
       <Comments postId={post.id} slug={post.slug} comments={comments}/>
       <aside className="mt-16 rounded-3xl bg-[#d8c09d] p-6 sm:p-8"><h2 className="font-serif text-3xl font-semibold text-forest">Ride along from home</h2><p className="mb-6 mt-2 text-stone-700">Get a note when the next road entry goes live.</p><SubscribeForm compact /></aside>
       <nav aria-label="Journal pagination" className="mt-12 grid gap-3 border-t border-stone-200 pt-8 sm:grid-cols-2">{adjacent.older ? <Link href={`/journal/${adjacent.older.slug}`} className="rounded-2xl bg-white p-4 focus-ring"><span className="text-xs font-bold uppercase tracking-wider text-sage">← Previous</span><span className="mt-1 block font-serif text-lg font-semibold text-forest">{adjacent.older.title}</span></Link> : <span />}{adjacent.newer && <Link href={`/journal/${adjacent.newer.slug}`} className="rounded-2xl bg-white p-4 text-right focus-ring"><span className="text-xs font-bold uppercase tracking-wider text-sage">Next →</span><span className="mt-1 block font-serif text-lg font-semibold text-forest">{adjacent.newer.title}</span></Link>}</nav>
