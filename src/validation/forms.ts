@@ -3,6 +3,8 @@ import { z } from "zod";
 export const subscribeSchema = z.object({
   name: z.string().trim().max(80, "Name must be 80 characters or fewer.").optional(),
   email: z.string().trim().email("Enter a valid email address."),
+  phone: z.string().trim().min(10, "Enter a valid mobile number.").max(25),
+  smsConsent: z.literal("on", { error: "Agree to receive text updates before subscribing." }),
 });
 
 export const commentSchema = z.object({
