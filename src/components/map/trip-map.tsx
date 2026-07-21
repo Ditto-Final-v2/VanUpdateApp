@@ -15,6 +15,7 @@ interface TripMapProps { posts: TripPost[]; compact?: boolean; center?: [number,
 type LoopId = 1 | 2;
 
 const loopColors = { 1: "#d56a24", 2: "#2f78a8" } as const;
+const transparentMapStyle:maplibregl.StyleSpecification={version:8,glyphs:"https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",sources:{},layers:[{id:"transparent-background",type:"background",paint:{"background-color":"rgba(0,0,0,0)"}}]};
 const routeWidth = (active: boolean): ExpressionSpecification => ["interpolate", ["linear"], ["zoom"], 3, active ? 2.5 : 2, 7, active ? 5 : 3.5, 11, active ? 8 : 6];
 function milesBetween(a:[number,number],b:[number,number]){const rad=Math.PI/180;const dLat=(b[1]-a[1])*rad;const dLng=(b[0]-a[0])*rad;const x=Math.sin(dLat/2)**2+Math.cos(a[1]*rad)*Math.cos(b[1]*rad)*Math.sin(dLng/2)**2;return 3958.8*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 type PlannedRoute = GeoJSON.Feature<GeoJSON.LineString | GeoJSON.MultiLineString>;
@@ -52,7 +53,7 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
     let instance: maplibregl.Map;
     let repaintFrame: number | undefined;
     try {
-      instance = new maplibregl.Map({ container: container.current, style: siteConfig.mapStyleUrl, center: center ?? [-109.5, 36], zoom: compact ? 8 : 4.6, minZoom: 2.5, maxZoom: 14, attributionControl: false, cooperativeGestures: true, dragRotate: false, pitchWithRotate: false, touchPitch: false });
+      instance = new maplibregl.Map({ container: container.current, style: compact?siteConfig.mapStyleUrl:transparentMapStyle, center: center ?? [-109.5, 36], zoom: compact ? 8 : 4.6, minZoom: 2.5, maxZoom: 14, attributionControl: false, cooperativeGestures: true, dragRotate: false, pitchWithRotate: false, touchPitch: false });
     } catch {
       const initializationError = window.setTimeout(() => setMapError("Interactive map unavailable in this browser. Showing the route preview instead."), 0);
       return () => window.clearTimeout(initializationError);
@@ -203,7 +204,7 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
   }, [compact, mapReady, selectedLoop]);
 
   return <div className={`trip-map-shell relative overflow-hidden ${compact ? "trip-map-shell-compact h-72 rounded-3xl bg-[#d9ddd5]" : "trip-map-shell-main h-[62vh] min-h-[500px] max-h-[760px] rounded-[1.75rem] bg-[#d6e2e3] sm:min-h-[560px]"}`}>
-    {!compact && <div ref={fallbackMap} aria-hidden="true" className={`trip-map-fallback absolute left-0 top-0 z-0 h-full w-full bg-contain bg-center bg-no-repeat transition-opacity duration-200 ${mapReady?"opacity-0":"opacity-100"}`} style={{ backgroundImage: `url('/data/planned-routes-loop-${selectedLoop}-selected.svg?v=van-nav-7')` }} />}
+    {!compact && <div ref={fallbackMap} aria-hidden="true" className="trip-map-fallback absolute left-0 top-0 z-0 h-full w-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: "url('/data/us-map-basemap.svg?v=live-map-1')" }} />}
     <div ref={container} className="trip-map-canvas absolute inset-0 z-[1]" aria-label={compact ? "Map showing this journal entry location" : "Interactive map of the planned and completed road trip route"} />
     {!compact && <div aria-hidden="true" className="map-gesture-hint"><span className="map-tip-desktop">Drag to move · Scroll to zoom</span><span className="map-tip-mobile">Use two fingers to move or zoom · One finger scrolls the page</span></div>}
     {mapError && <div role="status" className="absolute inset-x-4 top-4 z-10 rounded-xl bg-white/95 p-4 text-sm shadow-lg"><strong>Route preview.</strong> {mapError}</div>}
