@@ -19,12 +19,14 @@ const routeWidth = (active: boolean): ExpressionSpecification => ["interpolate",
 function milesBetween(a:[number,number],b:[number,number]){const rad=Math.PI/180;const dLat=(b[1]-a[1])*rad;const dLng=(b[0]-a[0])*rad;const x=Math.sin(dLat/2)**2+Math.cos(a[1]*rad)*Math.cos(b[1]*rad)*Math.sin(dLng/2)**2;return 3958.8*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 type PlannedRoute = GeoJSON.Feature<GeoJSON.LineString | GeoJSON.MultiLineString>;
 function routeLines(route:PlannedRoute):[number,number][][]{return route.geometry.type==="LineString"?[route.geometry.coordinates as [number,number][]]:route.geometry.coordinates as [number,number][][];}
-function completedRouteTo(route:PlannedRoute,checkpoint:[number,number]):GeoJSON.Feature<GeoJSON.LineString>|null{
+function routeFeature(lines:[number,number][][],name:string):PlannedRoute|null{const usable=lines.filter((line)=>line.length>1);if(!usable.length)return null;return{type:"Feature",properties:{name},geometry:{type:"MultiLineString",coordinates:usable}};}
+function splitRouteAt(route:PlannedRoute,checkpoint:[number,number]):{completed:PlannedRoute|null;remaining:PlannedRoute|null}{
   const lines=routeLines(route);let nearest={line:0,point:0,miles:Number.POSITIVE_INFINITY};
   lines.forEach((line,lineIndex)=>line.forEach((point,pointIndex)=>{const miles=milesBetween(checkpoint,point);if(miles<nearest.miles)nearest={line:lineIndex,point:pointIndex,miles};}));
-  const coordinates=lines.slice(0,nearest.line).flatMap((line)=>line).concat(lines[nearest.line]?.slice(0,nearest.point+1)??[]);
-  if(coordinates.length<2)return null;
-  return{type:"Feature",properties:{name:"Completed route"},geometry:{type:"LineString",coordinates}};
+  const currentLine=lines[nearest.line]??[];
+  const completedLines=[...lines.slice(0,nearest.line),currentLine.slice(0,nearest.point+1)];
+  const remainingLines=[currentLine.slice(nearest.point),...lines.slice(nearest.line+1)];
+  return{completed:routeFeature(completedLines,"Completed route"),remaining:routeFeature(remainingLines,"Planned route")};
 }
 
 const loopConfig = {
@@ -148,13 +150,15 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
       if (!compact) {
         await Promise.all(([1, 2] as const).map(async (loop) => {
           const [route,stops]=await Promise.all([fetch(loopConfig[loop].routeUrl).then((response)=>response.json()) as Promise<PlannedRoute>,fetch(loopConfig[loop].stopsUrl).then((response)=>response.json()) as Promise<GeoJSON.FeatureCollection<GeoJSON.Point>>]);
-          instance.addSource(`planned-loop-${loop}`, { type: "geojson", data: route });
+          const latestCheckpoint=posts.filter((post)=>(post.loopNumber??1)===loop).sort((a,b)=>a.entryDate.localeCompare(b.entryDate)||a.publishedAt.localeCompare(b.publishedAt)).at(-1);
+          const split=latestCheckpoint?splitRouteAt(route,[latestCheckpoint.longitude,latestCheckpoint.latitude]):null;
+          instance.addSource(`planned-loop-${loop}`, { type: "geojson", data: split?.remaining??route });
           const active=loop===(tripState?.activeLoop??1);instance.addLayer({ id: `planned-loop-${loop}`, type: "line", source: `planned-loop-${loop}`, paint: { "line-color": loopColors[loop], "line-width": routeWidth(active), "line-opacity": active ? 1 : .28, "line-dasharray": active ? [2, 2] : [1.5, 2.5] } });
           const checkpoints=posts.filter((post)=>(post.loopNumber??1)===loop).map((post)=>[post.longitude,post.latitude] as [number,number]);stops.features.forEach((stop)=>{stop.properties={...stop.properties,completed:checkpoints.some((point)=>milesBetween(point,stop.geometry.coordinates as [number,number])<=30)}});
           instance.addSource(`planned-stops-${loop}`, { type: "geojson", data:stops });
           instance.addLayer({ id: `planned-stop-markers-${loop}`, type: "circle", source: `planned-stops-${loop}`, layout: { visibility: active ? "visible" : "none" }, paint: { "circle-color": ["case", ["boolean", ["get", "completed"], false], "#7c3aed", "#8b1e1e"], "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 3, 6, 5, 10, 8], "circle-stroke-color": "#fffdf8", "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 3, 1, 8, 2.5] } });
           instance.addLayer({ id: `planned-stop-labels-${loop}`, type: "symbol", source: `planned-stops-${loop}`, layout: { visibility: active ? "visible" : "none", "text-field": ["get", "name"], "text-size": ["interpolate", ["linear"], ["zoom"], 3, 9, 6, 14, 10, 19], "text-font": ["Noto Sans Regular"], "text-variable-anchor": ["top", "bottom", "left", "right"], "text-radial-offset": .9, "text-padding": 4, "text-justify": "auto" }, paint: { "text-color": "#263f37", "text-halo-color": "#fffdf8", "text-halo-width": ["interpolate", ["linear"], ["zoom"], 3, 1, 8, 2.5] } });
-          const latestCheckpoint=posts.filter((post)=>(post.loopNumber??1)===loop).sort((a,b)=>a.entryDate.localeCompare(b.entryDate)||a.publishedAt.localeCompare(b.publishedAt)).at(-1);const traveled=latestCheckpoint?completedRouteTo(route,[latestCheckpoint.longitude,latestCheckpoint.latitude]):null;if(traveled){instance.addSource(`completed-loop-${loop}`,{type:"geojson",data:traveled});instance.addLayer({id:`completed-loop-${loop}`,type:"line",source:`completed-loop-${loop}`,layout:{visibility:active?"visible":"none"},paint:{"line-color":"#7c3aed","line-width":["interpolate",["linear"],["zoom"],3,3,7,6,11,9],"line-opacity":.95}});}
+          if(split?.completed){instance.addSource(`completed-loop-${loop}`,{type:"geojson",data:split.completed});instance.addLayer({id:`completed-loop-${loop}`,type:"line",source:`completed-loop-${loop}`,layout:{visibility:active?"visible":"none"},paint:{"line-color":"#7c3aed","line-width":routeWidth(active),"line-opacity":1,"line-dasharray":[2,2]}});}
         }));
         const vanMarker = document.createElement("div");
         vanMarker.className = "current-van-marker";
@@ -191,7 +195,7 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
       instance.setPaintProperty(`planned-loop-${loop}`, "line-dasharray", active ? [2, 2] : [1.5, 2.5]);
       instance.setLayoutProperty(`planned-stop-markers-${loop}`, "visibility", active ? "visible" : "none");
       instance.setLayoutProperty(`planned-stop-labels-${loop}`, "visibility", active ? "visible" : "none");
-      if(instance.getLayer(`completed-loop-${loop}`))instance.setLayoutProperty(`completed-loop-${loop}`,"visibility",active?"visible":"none");
+      if(instance.getLayer(`completed-loop-${loop}`)){instance.setLayoutProperty(`completed-loop-${loop}`,"visibility",active?"visible":"none");instance.setPaintProperty(`completed-loop-${loop}`,"line-width",routeWidth(active));}
     });
     vanArt.current?.classList.toggle("facing-left", selectedLoop === 1);
     instance.fitBounds(loopConfig[selectedLoop].bounds, { padding: 55, maxZoom: 6, duration: 500 });
