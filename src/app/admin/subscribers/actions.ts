@@ -28,7 +28,7 @@ export async function sendQueuedNotifications(){
     if(row.channel==="mms"){
       if(!mmsConfigured||!subscriber.phone_e164||subscriber.sms_status!=="active")continue;
       const hook=post.notification_title||row.subject||post.title;
-      const body=`Road & Country — Day ${post.trip_day}: ${hook}\n${site}/journal/${post.slug}\nReply STOP to unsubscribe.`;
+      const body=`Curtis Road Trip (Road & Country) — Day ${post.trip_day}: ${hook}\n${site}/journal/${post.slug}\nReply STOP to opt out; HELP for help.`;
       result=await sendMms(subscriber.phone_e164,body,post.cover_image_path?`${site}/api/mms/${post.id}`:undefined);
     }else{
       if(!emailConfigured||!subscriber.email||subscriber.status!=="active")continue;

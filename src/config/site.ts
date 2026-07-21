@@ -17,7 +17,7 @@ export const siteConfig = {
   mapStyleUrl:
     process.env.NEXT_PUBLIC_MAP_STYLE_URL ??
     "https://tiles.openfreemap.org/styles/positron",
-  contactEmail: "hello@example.com",
+  contactEmail: "curtis.gerstner@gmail.com",
   socialLinks: {
     instagram: "https://www.instagram.com/",
   },
