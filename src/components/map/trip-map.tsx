@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import maplibregl, { LngLatBounds } from "maplibre-gl";
 import type { ExpressionSpecification } from "@maplibre/maplibre-gl-style-spec";
@@ -45,7 +45,8 @@ const loopConfig = {
 } as const;
 
 export function TripMap({ posts, compact = false, center,tripState }: TripMapProps) {
-  const container = useRef<HTMLDivElement>(null); const fallbackMap = useRef<HTMLDivElement>(null); const map = useRef<maplibregl.Map | null>(null); const vanArt = useRef<HTMLSpanElement>(null); const fallbackView = useRef({ scale: 1, x: 0, y: 0 }); const fallbackDrag = useRef<{ pointerId: number; x: number; y: number } | null>(null); const fallbackTouch = useRef<{ distance: number; midpointX: number; midpointY: number; scale: number; x: number; y: number } | null>(null); const [selectedPost, setSelectedPost] = useState<TripPost | null>(null); const [selectedLoop, setSelectedLoop] = useState<LoopId>(tripState?.activeLoop??1); const [mapReady, setMapReady] = useState(false); const [mapError, setMapError] = useState<string | null>(null);
+  const liveState=useMemo<TripMapState|undefined>(()=>{const newestPost=posts.slice().sort((a,b)=>b.entryDate.localeCompare(a.entryDate)||b.publishedAt.localeCompare(a.publishedAt))[0];return newestPost?{currentLocationName:newestPost.locationName,latitude:newestPost.latitude,longitude:newestPost.longitude,activeLoop:newestPost.loopNumber??1}:tripState;},[posts,tripState]);
+  const container = useRef<HTMLDivElement>(null); const fallbackMap = useRef<HTMLDivElement>(null); const map = useRef<maplibregl.Map | null>(null); const vanArt = useRef<HTMLSpanElement>(null); const fallbackView = useRef({ scale: 1, x: 0, y: 0 }); const fallbackDrag = useRef<{ pointerId: number; x: number; y: number } | null>(null); const fallbackTouch = useRef<{ distance: number; midpointX: number; midpointY: number; scale: number; x: number; y: number } | null>(null); const [selectedPost, setSelectedPost] = useState<TripPost | null>(null); const [selectedLoop, setSelectedLoop] = useState<LoopId>(liveState?.activeLoop??1); const [mapReady, setMapReady] = useState(false); const [mapError, setMapError] = useState<string | null>(null);
   useEffect(() => {
     if (!container.current || map.current) return;
     let instance: maplibregl.Map;
@@ -153,7 +154,7 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
           const latestCheckpoint=posts.filter((post)=>(post.loopNumber??1)===loop).sort((a,b)=>a.entryDate.localeCompare(b.entryDate)||a.publishedAt.localeCompare(b.publishedAt)).at(-1);
           const split=latestCheckpoint?splitRouteAt(route,[latestCheckpoint.longitude,latestCheckpoint.latitude]):null;
           instance.addSource(`planned-loop-${loop}`, { type: "geojson", data: split?.remaining??route });
-          const active=loop===(tripState?.activeLoop??1);instance.addLayer({ id: `planned-loop-${loop}`, type: "line", source: `planned-loop-${loop}`, paint: { "line-color": loopColors[loop], "line-width": routeWidth(active), "line-opacity": active ? 1 : .28, "line-dasharray": active ? [2, 2] : [1.5, 2.5] } });
+          const active=loop===(liveState?.activeLoop??1);instance.addLayer({ id: `planned-loop-${loop}`, type: "line", source: `planned-loop-${loop}`, paint: { "line-color": loopColors[loop], "line-width": routeWidth(active), "line-opacity": active ? 1 : .28, "line-dasharray": active ? [2, 2] : [1.5, 2.5] } });
           const checkpoints=posts.filter((post)=>(post.loopNumber??1)===loop).map((post)=>[post.longitude,post.latitude] as [number,number]);stops.features.forEach((stop)=>{stop.properties={...stop.properties,completed:checkpoints.some((point)=>milesBetween(point,stop.geometry.coordinates as [number,number])<=30)}});
           instance.addSource(`planned-stops-${loop}`, { type: "geojson", data:stops });
           instance.addLayer({ id: `planned-stop-markers-${loop}`, type: "circle", source: `planned-stops-${loop}`, layout: { visibility: active ? "visible" : "none" }, paint: { "circle-color": ["case", ["boolean", ["get", "completed"], false], "#7c3aed", "#8b1e1e"], "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 3, 6, 5, 10, 8], "circle-stroke-color": "#fffdf8", "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 3, 1, 8, 2.5] } });
@@ -163,13 +164,13 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
         const vanMarker = document.createElement("div");
         vanMarker.className = "current-van-marker";
         vanMarker.setAttribute("role", "img");
-        vanMarker.setAttribute("aria-label", `Current location: ${tripState?.currentLocationName??"El Paso, Texas"}`);
+        vanMarker.setAttribute("aria-label", `Current location: ${liveState?.currentLocationName??"El Paso, Texas"}`);
         const vanImage = document.createElement("span");
         vanImage.className = "current-van-art facing-left";
         vanMarker.appendChild(vanImage);
         vanArt.current = vanImage;
-        new maplibregl.Marker({ element: vanMarker, anchor: "bottom" }).setLngLat([tripState?.longitude??-106.546623,tripState?.latitude??31.820633]).addTo(instance);
-        instance.fitBounds(loopConfig[tripState?.activeLoop??1].bounds, { padding: 55, maxZoom: 6, duration: 0 });
+        new maplibregl.Marker({ element: vanMarker, anchor: "bottom" }).setLngLat([liveState?.longitude??-106.546623,liveState?.latitude??31.820633]).addTo(instance);
+        instance.fitBounds(loopConfig[liveState?.activeLoop??1].bounds, { padding: 55, maxZoom: 6, duration: 0 });
         repaintFrame = window.requestAnimationFrame(() => {
           instance.resize();
           instance.triggerRepaint();
@@ -182,7 +183,7 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
     });
     instance.on("error", (event) => { if (event.error?.message?.includes("style")) setMapError("The interactive map style could not load. Showing the route preview instead."); });
     return () => { window.clearTimeout(loadTimeout); if (repaintFrame !== undefined) window.cancelAnimationFrame(repaintFrame); mapSurface.removeEventListener("wheel", handleWheelZoom, { capture: true }); mapSurface.removeEventListener("pointerdown", handleFallbackPointerDown); mapSurface.removeEventListener("pointermove", handleFallbackPointerMove); mapSurface.removeEventListener("pointerup", handleFallbackPointerUp); mapSurface.removeEventListener("pointercancel", handleFallbackPointerUp); mapSurface.removeEventListener("touchstart", handleFallbackTouchStart); mapSurface.removeEventListener("touchmove", handleFallbackTouchMove); mapSurface.removeEventListener("touchend", handleFallbackTouchEnd); mapSurface.removeEventListener("touchcancel", handleFallbackTouchEnd); instance.remove(); map.current = null; };
-  }, [center, compact, posts, tripState]);
+  }, [center, compact, posts, liveState]);
 
   useEffect(() => {
     const instance = map.current;
@@ -202,7 +203,7 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
   }, [compact, mapReady, selectedLoop]);
 
   return <div className={`trip-map-shell relative overflow-hidden ${compact ? "trip-map-shell-compact h-72 rounded-3xl bg-[#d9ddd5]" : "trip-map-shell-main h-[62vh] min-h-[500px] max-h-[760px] rounded-[1.75rem] bg-[#d6e2e3] sm:min-h-[560px]"}`}>
-    {!compact && <div ref={fallbackMap} aria-hidden="true" className="trip-map-fallback absolute left-0 top-0 z-0 h-full w-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/data/planned-routes-loop-${selectedLoop}-selected.svg?v=van-nav-6')` }} />}
+    {!compact && <div ref={fallbackMap} aria-hidden="true" className={`trip-map-fallback absolute left-0 top-0 z-0 h-full w-full bg-contain bg-center bg-no-repeat transition-opacity duration-200 ${mapReady?"opacity-0":"opacity-100"}`} style={{ backgroundImage: `url('/data/planned-routes-loop-${selectedLoop}-selected.svg?v=van-nav-7')` }} />}
     <div ref={container} className="trip-map-canvas absolute inset-0 z-[1]" aria-label={compact ? "Map showing this journal entry location" : "Interactive map of the planned and completed road trip route"} />
     {!compact && <div aria-hidden="true" className="map-gesture-hint"><span className="map-tip-desktop">Drag to move · Scroll to zoom</span><span className="map-tip-mobile">Use two fingers to move or zoom · One finger scrolls the page</span></div>}
     {mapError && <div role="status" className="absolute inset-x-4 top-4 z-10 rounded-xl bg-white/95 p-4 text-sm shadow-lg"><strong>Route preview.</strong> {mapError}</div>}

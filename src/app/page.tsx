@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { ArrowRight, MapPin } from "lucide-react";
 import { TripMap } from "@/components/map/trip-map";
 import { PostCard } from "@/components/blog/post-card";
@@ -6,12 +7,14 @@ import { SubscribeForm } from "@/components/forms/subscribe-form";
 import { siteConfig } from "@/config/site";
 import { getPublishedPosts } from "@/lib/posts";
 import { formatDate } from "@/lib/utils";
-import { getTripMapState, getTripStats } from "@/lib/trip-stats";
+import { getTripStats, type TripMapState } from "@/lib/trip-stats";
 import { PostCover } from "@/components/blog/post-cover";
 
 export default async function Home() {
-  const [publishedPosts, tripStats, tripMapState] = await Promise.all([getPublishedPosts(), getTripStats(), getTripMapState()]);
+  await connection();
+  const [publishedPosts, tripStats] = await Promise.all([getPublishedPosts(), getTripStats()]);
   const latest = publishedPosts[0];
+  const tripMapState:TripMapState=latest?{currentLocationName:latest.locationName,latitude:latest.latitude,longitude:latest.longitude,activeLoop:latest.loopNumber??1}:{currentLocationName:"El Paso, TX",latitude:31.820633,longitude:-106.546623,activeLoop:1};
   return <>
     <section className="retro-hero page-shell mt-6 sm:mt-10"><div className="retro-titlebar"><span>ROAD_LOG.HTML</span><span>— □ ×</span></div><div className="retro-hero-body"><div><p className="retro-trip-badge"><span aria-hidden="true">★</span> 5 MONTH ROAD TRIP <span aria-hidden="true">★</span></p><h1 className="font-serif text-[clamp(2.8rem,8vw,6.2rem)] font-semibold leading-[.96] tracking-[-.035em] text-forest">{siteConfig.tripName}</h1><div className="retro-stats-grid mt-8" aria-label="Trip statistics">{tripStats.map((stat) => <div className="retro-stat" key={stat.label}><strong>{stat.value}</strong><span>{stat.label}</span></div>)}</div><div className="retro-trip-formula"><p className="retro-formula-label">{"// THE ROAD-TRIP FORMULA"}</p><p className="retro-formula-input">Town &amp; Country 2010 Minivan <b>+</b> 300k Miles <b>+</b> Moving to El Paso <b>+</b> Career Change <b>+</b> 2 Kind Uncles</p><div className="retro-formula-rule" aria-hidden="true" /><p className="retro-formula-output"><span>=</span> Roleplaying as a Long Haul Trucker</p></div></div></div><div className="retro-statusbar"><span>● ONLINE FROM {tripMapState.currentLocationName.toUpperCase()}</span><span>YOU ARE VISITOR #001432</span></div></section>
     <section id="route" className="retro-window page-shell mt-12 scroll-mt-24 sm:mt-16"><div className="retro-section-head flex flex-wrap items-center justify-between gap-3"><h2>★ Follow the journey</h2><p className="retro-current flex items-center gap-2"><span className="h-2 w-2 animate-pulse rounded-full bg-[#33cc66]" />Currently near {tripMapState.currentLocationName}</p></div><div className="p-2 sm:p-3"><TripMap posts={publishedPosts} tripState={tripMapState} /></div></section>
