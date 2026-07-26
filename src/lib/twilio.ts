@@ -34,6 +34,36 @@ export async function sendMms(to: string, body: string, mediaUrl?: string) {
   }
 }
 
+export async function getMmsDeliveryStatus(messageSid: string) {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (!accountSid || !authToken) {
+    return { found: false as const, error: "Twilio delivery is not configured." };
+  }
+  if (!/^SM[a-f0-9]{32}$/i.test(messageSid)) {
+    return { found: false as const, error: "Invalid Twilio message identifier." };
+  }
+  try {
+    const message = await twilio(accountSid, authToken)
+      .messages(messageSid)
+      .fetch();
+    return {
+      found: true as const,
+      status: message.status,
+      errorCode: message.errorCode ? String(message.errorCode) : null,
+      errorMessage: message.errorMessage ?? null,
+    };
+  } catch (error) {
+    return {
+      found: false as const,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Twilio message status could not be checked.",
+    };
+  }
+}
+
 export async function scheduleMms(
   to: string,
   body: string,
