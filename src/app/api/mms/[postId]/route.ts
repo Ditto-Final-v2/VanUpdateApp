@@ -1,12 +1,21 @@
 import sharp from "sharp";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function cover(postId: string, includeBody: boolean) {
   if (!/^[a-f0-9-]{36}$/i.test(postId)) return new Response("Not found", { status: 404 });
-  const supabase = createAdminClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const publishableKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !publishableKey) {
+    return new Response("Media service unavailable", { status: 503 });
+  }
+  const supabase = createClient(supabaseUrl, publishableKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
   const { data: post } = await supabase.from("posts").select("cover_image_path,status").eq("id", postId).eq("status", "published").maybeSingle();
   if (!post?.cover_image_path) return new Response("Not found", { status: 404 });
   const { data, error } = await supabase.storage.from("trip-photos").download(post.cover_image_path);
