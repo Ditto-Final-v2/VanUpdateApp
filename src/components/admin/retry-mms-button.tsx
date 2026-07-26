@@ -12,7 +12,7 @@ export function RetryMmsButton({ title }: { title: string }) {
       onClick={(event) => {
         if (
           !window.confirm(
-            `Check Twilio and resend only failed MMS notifications for “${title}”?`,
+            `Check Twilio and resend failed, undelivered, or missing-image MMS notifications for “${title}”?`,
           )
         ) {
           event.preventDefault();

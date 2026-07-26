@@ -13,6 +13,7 @@ interface AdminPostsSearchParams {
   resent?: string;
   failed?: string;
   skipped?: string;
+  unverified?: string;
 }
 
 export default async function AdminPosts({
@@ -24,7 +25,7 @@ export default async function AdminPosts({
   const result = await searchParams;
   const retryMessage =
     result.mms === "complete"
-      ? `MMS check complete: ${Number(result.resent) || 0} resent, ${Number(result.failed) || 0} failed, and ${Number(result.skipped) || 0} skipped because Twilio did not report a failed delivery.`
+      ? `MMS check complete: ${Number(result.resent) || 0} resent, ${Number(result.failed) || 0} failed, ${Number(result.skipped) || 0} skipped because Twilio confirmed a successful MMS with media, and ${Number(result.unverified) || 0} could not be verified.`
       : result.mms === "unavailable"
         ? "The MMS retry could not run. Check the post and Twilio configuration."
         : null;
@@ -62,8 +63,9 @@ export default async function AdminPosts({
         </div>
       </div>
       <p className="mt-2 text-xs text-stone-500">
-        MMS retry checks Twilio first and resends only failed or undelivered
-        copies. Cleanup removes unlinked uploads older than 24 hours.
+        MMS retry checks Twilio first and resends failed, undelivered, or
+        missing-image copies. Cleanup removes unlinked uploads older than 24
+        hours.
       </p>
       <div className="mt-4 overflow-hidden border-2 border-forest bg-white">
         {posts.map((post) => (

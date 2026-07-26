@@ -40,7 +40,7 @@ export async function getMmsDeliveryStatus(messageSid: string) {
   if (!accountSid || !authToken) {
     return { found: false as const, error: "Twilio delivery is not configured." };
   }
-  if (!/^SM[a-f0-9]{32}$/i.test(messageSid)) {
+  if (!/^(SM|MM)[a-f0-9]{32}$/i.test(messageSid)) {
     return { found: false as const, error: "Invalid Twilio message identifier." };
   }
   try {
@@ -50,6 +50,7 @@ export async function getMmsDeliveryStatus(messageSid: string) {
     return {
       found: true as const,
       status: message.status,
+      numMedia: Number(message.numMedia ?? "0"),
       errorCode: message.errorCode ? String(message.errorCode) : null,
       errorMessage: message.errorMessage ?? null,
     };

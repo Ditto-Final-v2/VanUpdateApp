@@ -44,6 +44,7 @@ export async function retryFailedPostMms(formData: FormData) {
   let resent = 0;
   let failed = 0;
   let skipped = 0;
+  let unverified = 0;
 
   for (const row of rows ?? []) {
     const subscriber = Array.isArray(row.subscriber)
@@ -58,10 +59,17 @@ export async function retryFailedPostMms(formData: FormData) {
     if (row.provider_message_id) {
       const provider = await getMmsDeliveryStatus(row.provider_message_id);
       if (!provider.found) {
-        skipped += 1;
+        unverified += 1;
         continue;
       }
-      shouldRetry = retryableStatuses.has(provider.status);
+      const missingExpectedMedia =
+        Boolean(post.cover_image_path) &&
+        ["sent", "delivered"].includes(provider.status) &&
+        provider.numMedia === 0;
+      shouldRetry =
+        retryableStatuses.has(provider.status) ||
+        Boolean(provider.errorCode) ||
+        missingExpectedMedia;
     }
     if (!shouldRetry) {
       skipped += 1;
@@ -122,6 +130,6 @@ export async function retryFailedPostMms(formData: FormData) {
   revalidatePath("/admin/posts");
   revalidatePath("/admin/subscribers");
   redirect(
-    `/admin/posts?mms=complete&resent=${resent}&failed=${failed}&skipped=${skipped}`,
+    `/admin/posts?mms=complete&resent=${resent}&failed=${failed}&skipped=${skipped}&unverified=${unverified}`,
   );
 }
