@@ -83,9 +83,9 @@ body {
 .retro-article-surface .text-stone-500, .retro-article-surface .text-stone-600, .retro-article-surface .text-stone-700 { color: #47534f !important; }
 .retro-feature img:not(.post-cover-backdrop), .retro-post-card img:not(.post-cover-backdrop) { filter: saturate(.92) contrast(1.04); }
 .post-cover-backdrop {
-  transform: scale(1.35);
-  filter: blur(42px) brightness(.58) saturate(.72) contrast(.92);
-  opacity: .72;
+  transform: scale(1.25);
+  filter: blur(24px) brightness(.72) saturate(.9) contrast(.96);
+  opacity: .88;
   will-change: transform, filter;
 }
 .retro-post-card { border-radius: 0 !important; }
