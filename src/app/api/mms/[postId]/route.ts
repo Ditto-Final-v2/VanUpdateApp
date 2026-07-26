@@ -21,7 +21,7 @@ async function cover(postId: string, includeBody: boolean) {
   const { data, error } = await supabase.storage.from("trip-photos").download(post.cover_image_path);
   if (error || !data) return new Response("Not found", { status: 404 });
   const image = await sharp(Buffer.from(await data.arrayBuffer())).rotate().resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true }).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
-  return new Response(includeBody ? image : null, { headers: { "Content-Type": "image/jpeg", "Content-Length": String(image.byteLength), "Content-Disposition": 'inline; filename="cover.jpg"', "Cache-Control": "public, max-age=86400, s-maxage=86400" } });
+  return new Response(includeBody ? new Uint8Array(image) : null, { headers: { "Content-Type": "image/jpeg", "Content-Length": String(image.byteLength), "Content-Disposition": 'inline; filename="cover.jpg"', "Cache-Control": "public, max-age=86400, s-maxage=86400" } });
 }
 
 export async function GET(_request: Request, { params }: { params: Promise<{ postId: string }> }) { return cover((await params).postId, true); }
