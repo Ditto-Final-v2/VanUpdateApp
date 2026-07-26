@@ -16,6 +16,7 @@ export const posts: TripPost[] = [
       { src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=85", alt: "Layered mountain and desert landscape", caption: "The long view from the morning trail." },
       { src: "https://images.unsplash.com/photo-1473445361085-b9a07f55608b?auto=format&fit=crop&w=1200&q=85", alt: "Camp among trees in warm evening light", caption: "Home for the night, just before dinner." },
     ], notificationTitle: "A red-rock morning from Moab", status: "published", tripDay: 18, mileageToDate: 1432,
+    milesDrivenThisEntry:236,milesWalked:5,milesRan:0,milesBiked:0,majorCitiesVisited:0,newStatesVisited:0,newNationalParksVisited:1,tanksOfGas:1,
   },
   {
     id: "post-005", slug: "under-the-stars-at-capitol-reef", title: "Under the Stars at Capitol Reef",
@@ -25,6 +26,7 @@ export const posts: TripPost[] = [
     coverImage: "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=1800&q=85", coverImageAlt: "Warm sunlight filtering into a quiet forest",
     photos: [{ src: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1200&q=85", alt: "Van beside a mountain lake", caption: "A roadside pause worth keeping." }],
     notificationTitle: "Stars over Capitol Reef", status: "published", tripDay: 15, mileageToDate: 1196,
+    milesDrivenThisEntry:266,milesWalked:3,milesRan:0,milesBiked:0,majorCitiesVisited:0,newStatesVisited:0,newNationalParksVisited:1,tanksOfGas:1,
   },
   {
     id: "post-004", slug: "slow-day-in-zion", title: "A Slow Day in Zion",
@@ -34,6 +36,7 @@ export const posts: TripPost[] = [
     coverImage: "https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1800&q=85", coverImageAlt: "A hiker looking into a sunlit canyon",
     photos: [{ src: "https://images.unsplash.com/photo-1443632864897-14973fa006cf?auto=format&fit=crop&w=1200&q=85", alt: "Rocky river running through a canyon", caption: "Following the river upstream." }],
     notificationTitle: "Taking it slow in Zion", status: "published", tripDay: 11, mileageToDate: 930,
+    milesDrivenThisEntry:318,milesWalked:4,milesRan:0,milesBiked:0,majorCitiesVisited:0,newStatesVisited:1,newNationalParksVisited:1,tanksOfGas:1,
   },
   {
     id: "post-003", slug: "two-nights-in-sedona", title: "Two Nights in Sedona",
@@ -43,6 +46,7 @@ export const posts: TripPost[] = [
     coverImage: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=1800&q=85", coverImageAlt: "Sunlight shining through green leaves",
     photos: [{ src: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=85", alt: "Desert road winding between red hills", caption: "The road north into red-rock country." }],
     notificationTitle: "Hello from Sedona", status: "published", tripDay: 6, mileageToDate: 612,
+    milesDrivenThisEntry:494,milesWalked:4,milesRan:0,milesBiked:6,majorCitiesVisited:0,newStatesVisited:1,newNationalParksVisited:0,tanksOfGas:2,
   },
   {
     id: "post-002", slug: "white-sands-and-blue-skies", title: "White Sands & Blue Skies",
@@ -52,6 +56,7 @@ export const posts: TripPost[] = [
     coverImage: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=1800&q=85", coverImageAlt: "Pale desert dunes under a blue sky",
     photos: [{ src: "https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&w=1200&q=85", alt: "Desert dunes at golden hour", caption: "Late light across the gypsum." }],
     notificationTitle: "A bright day at White Sands", status: "published", tripDay: 2, mileageToDate: 118,
+    milesDrivenThisEntry:118,milesWalked:2,milesRan:0,milesBiked:0,majorCitiesVisited:0,newStatesVisited:0,newNationalParksVisited:1,tanksOfGas:0,
   },
   {
     id: "post-001", slug: "rolling-out-of-el-paso", title: "Rolling Out of El Paso",
@@ -61,5 +66,6 @@ export const posts: TripPost[] = [
     coverImage: "https://images.unsplash.com/photo-1527786356703-4b100091cd2c?auto=format&fit=crop&w=1800&q=85", coverImageAlt: "Camper van parked on an open desert road",
     photos: [{ src: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=85", alt: "Vehicle driving an open road", caption: "The first miles out of town." }],
     notificationTitle: "The trip begins", status: "published", tripDay: 1, mileageToDate: 0,
+    milesDrivenThisEntry:0,milesWalked:0,milesRan:0,milesBiked:0,majorCitiesVisited:0,newStatesVisited:0,newNationalParksVisited:0,tanksOfGas:0,
   },
 ];

@@ -33,3 +33,33 @@ export async function sendMms(to: string, body: string, mediaUrl?: string) {
     return { sent: false as const, error: detail };
   }
 }
+
+export async function scheduleMms(
+  to: string,
+  body: string,
+  sendAt: Date,
+  mediaUrl?: string,
+  statusCallback?: string,
+) {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+  if (!accountSid || !authToken || !messagingServiceSid) {
+    return { sent: false as const, error: "Twilio delivery is not configured." };
+  }
+  try {
+    const message = await twilio(accountSid, authToken).messages.create({
+      to,
+      messagingServiceSid,
+      body,
+      scheduleType: "fixed",
+      sendAt,
+      ...(mediaUrl ? { mediaUrl: [mediaUrl] } : {}),
+      ...(statusCallback ? { statusCallback } : {}),
+    });
+    return { sent: true as const, id: message.sid };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Twilio rejected the scheduled message.";
+    return { sent: false as const, error: detail };
+  }
+}

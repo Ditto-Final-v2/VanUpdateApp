@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/admin";
+import { schedulePostMmsNotifications } from "@/lib/notification-scheduling";
 import { createClient } from "@/lib/supabase/server";
 import { journalEntrySchema } from "@/validation/forms";
 
@@ -56,6 +57,15 @@ export async function publishJournalEntry(
     if (locationError) return { message:locationError.message };
     const {data:latest}=await supabase.from("posts").select("id").eq("status","published").order("entry_date",{ascending:false}).order("published_at",{ascending:false}).limit(1).maybeSingle();
     if(latest?.id===postId)await supabase.from("trips").update({ current_location_name:value.locationName,current_latitude:value.latitude,current_longitude:value.longitude,active_loop:value.loopNumber }).eq("status","active");
+    if (value.sendNotification) {
+      // The queue remains intact if provider scheduling is unavailable, so the
+      // notification can still be recovered from the subscriber admin page.
+      try {
+        await schedulePostMmsNotifications(postId);
+      } catch {
+        // Publishing a journal entry should not fail because a provider is down.
+      }
+    }
   }
   revalidatePath("/");
   revalidatePath("/admin/posts");

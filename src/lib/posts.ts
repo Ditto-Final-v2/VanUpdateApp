@@ -11,13 +11,23 @@ type PostRow = {
   latitude: number; longitude: number; cover_image_path: string | null;
   cover_image_alt: string | null; notification_title: string | null;
   status: "published"; trip_day: number; mileage_to_date: number; loop_number: 1|2;
+  miles_walked: number; miles_ran: number; miles_biked: number;
+  major_cities_visited: number; new_states_visited: number;
+  new_national_parks_visited: number; tanks_of_gas: number;
   post_photos: PhotoRow[] | null;
 };
 
-const postColumns = "id,slug,title,excerpt,body,entry_date,published_at,location_name,latitude,longitude,cover_image_path,cover_image_alt,notification_title,status,trip_day,mileage_to_date,loop_number,post_photos(storage_path,alt_text,caption,sort_order)";
+const postColumns = "id,slug,title,excerpt,body,entry_date,published_at,location_name,latitude,longitude,cover_image_path,cover_image_alt,notification_title,status,trip_day,mileage_to_date,loop_number,miles_walked,miles_ran,miles_biked,major_cities_visited,new_states_visited,new_national_parks_visited,tanks_of_gas,post_photos(storage_path,alt_text,caption,sort_order)";
 
 async function addSignedPhotos(rows: PostRow[]): Promise<TripPost[]> {
   const supabase = await createClient();
+  const milesDrivenByPost = new Map<string, number>();
+  let previousMileageToDate: number | undefined;
+  rows.slice().sort((a, b) => a.entry_date.localeCompare(b.entry_date) || a.published_at.localeCompare(b.published_at)).forEach((row) => {
+    const mileageToDate = Number(row.mileage_to_date);
+    milesDrivenByPost.set(row.id, previousMileageToDate === undefined ? 0 : Math.max(0, mileageToDate - previousMileageToDate));
+    previousMileageToDate = mileageToDate;
+  });
   const paths = [...new Set(rows.flatMap((row) => [row.cover_image_path, ...(row.post_photos ?? []).map((photo) => photo.storage_path)]).filter((path): path is string => Boolean(path)))];
   const urlByPath = new Map<string, string>();
   if (paths.length) {
@@ -38,6 +48,12 @@ async function addSignedPhotos(rows: PostRow[]): Promise<TripPost[]> {
       coverImageAlt: row.cover_image_alt ?? `${row.title} journal cover`, photos,
       notificationTitle: row.notification_title ?? row.title, status: row.status,
       tripDay: row.trip_day, mileageToDate: row.mileage_to_date, loopNumber:row.loop_number,
+      milesDrivenThisEntry: milesDrivenByPost.get(row.id) ?? 0,
+      milesWalked: Number(row.miles_walked), milesRan: Number(row.miles_ran),
+      milesBiked: Number(row.miles_biked), majorCitiesVisited: Number(row.major_cities_visited),
+      newStatesVisited: Number(row.new_states_visited),
+      newNationalParksVisited: Number(row.new_national_parks_visited),
+      tanksOfGas: Number(row.tanks_of_gas),
     };
   });
 }

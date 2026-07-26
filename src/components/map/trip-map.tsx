@@ -21,11 +21,26 @@ function milesBetween(a:[number,number],b:[number,number]){const rad=Math.PI/180
 interface OverlayLine { coordinates:[number,number][];projected:[number,number][] }
 interface OverlayStop { name:string;coordinates:[number,number];projected:[number,number] }
 interface OverlayLoop { lines:OverlayLine[];labelsMarkup:string;stops:OverlayStop[] }
+interface SelectedPlace { name:string;posts:TripPost[] }
 const mapOverlayData=rawMapOverlayData as unknown as Record<"1"|"2",OverlayLoop>;
 function nearestRouteIndex(loop:OverlayLoop,checkpoint:[number,number]){let nearest={line:0,point:0,miles:Number.POSITIVE_INFINITY};loop.lines.forEach((line,lineIndex)=>line.coordinates.forEach((point,pointIndex)=>{const miles=milesBetween(checkpoint,point);if(miles<nearest.miles)nearest={line:lineIndex,point:pointIndex,miles};}));return nearest;}
 function svgPath(points:[number,number][]){return points.length>1?`M${points.map(([x,y])=>`${x},${y}`).join(" L")}`:"";}
+const placeNoiseWords=new Set(["the","national","state","park","monument","preserve","recreation","area","strip","south","rim"]);
+function normalizePlaceName(value:string){return value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/,\s*[a-z]{2}\b/g," ").replace(/&/g," and ").replace(/[^a-z0-9]+/g," ").trim().split(/\s+/).filter((word)=>!placeNoiseWords.has(word)).join(" ");}
+function placeNamesMatch(first:string,second:string){const a=normalizePlaceName(first);const b=normalizePlaceName(second);return Boolean(a&&b&&(a===b||(Math.min(a.length,b.length)>=4&&(a.includes(b)||b.includes(a)))));}
+function associatePostsWithStops(stops:OverlayStop[],posts:TripPost[]){
+  const associations=new Map<string,TripPost[]>(stops.map((stop)=>[stop.name,[]]));
+  posts.forEach((post)=>{
+    const named=stops.filter((stop)=>placeNamesMatch(stop.name,post.locationName));
+    const candidates=named.length?named:stops;
+    const nearest=candidates.map((stop)=>({stop,miles:milesBetween(stop.coordinates,[post.longitude,post.latitude])})).sort((a,b)=>a.miles-b.miles)[0];
+    if(nearest&&(named.length||nearest.miles<=75))associations.get(nearest.stop.name)?.push(post);
+  });
+  associations.forEach((entries)=>entries.sort((a,b)=>b.entryDate.localeCompare(a.entryDate)||b.publishedAt.localeCompare(a.publishedAt)));
+  return associations;
+}
 
-function TripRouteOverlay({posts,selectedLoop,liveState}:{posts:TripPost[];selectedLoop:LoopId;liveState?:TripMapState}){
+function TripRouteOverlay({posts,selectedLoop,liveState,onSelectStop}:{posts:TripPost[];selectedLoop:LoopId;liveState?:TripMapState;onSelectStop:(place:SelectedPlace)=>void}){
   const active=mapOverlayData[String(selectedLoop) as "1"|"2"];
   const otherLoop=(selectedLoop===1?2:1) as LoopId;
   const inactive=mapOverlayData[String(otherLoop) as "1"|"2"];
@@ -37,9 +52,9 @@ function TripRouteOverlay({posts,selectedLoop,liveState}:{posts:TripPost[];selec
   const vanPosition=vanPoint?liveLoop.lines[vanPoint.line]?.projected[vanPoint.point]:undefined;
   const previousVanPosition=vanPoint?(liveLoop.lines[vanPoint.line]?.projected[Math.max(0,vanPoint.point-1)]??vanPosition):undefined;
   const vanFacesLeft=Boolean(vanPosition&&previousVanPosition&&vanPosition[0]<previousVanPosition[0]);
-  const checkpoints=activePosts.map((post)=>[post.longitude,post.latitude] as [number,number]);
+  const entriesByStop=associatePostsWithStops(active.stops,activePosts);
   return <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 1400 760" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`Loop ${selectedLoop} planned route with completed travel and current van location`}>
-    <style>{`.svg-trip-route{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}.svg-trip-labels text{fill:#263f37;stroke:#fffdf8;stroke-width:4px;paint-order:stroke;stroke-linejoin:round;font:750 15px system-ui,sans-serif}.svg-trip-labels .leader{fill:none;stroke:#71806a;stroke-width:1.5}`}</style>
+    <style>{`.svg-trip-route{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 7}.svg-trip-labels text{fill:#263f37;stroke:#fffdf8;stroke-width:4px;paint-order:stroke;stroke-linejoin:round;font:750 15px system-ui,sans-serif}.svg-trip-labels .leader{fill:none;stroke:#71806a;stroke-width:1.5}.map-destination{pointer-events:all;cursor:pointer;outline:none}.map-destination .stop-dot{transition:r .15s,stroke-width .15s}.map-destination:hover .stop-dot,.map-destination:focus .stop-dot{r:8px;stroke-width:4px}`}</style>
     <g opacity=".28">{inactive.lines.map((line,index)=><path key={`inactive-${otherLoop}-${index}`} className="svg-trip-route" d={svgPath(line.projected)} stroke={loopColors[otherLoop]} strokeWidth="3" />)}</g>
     <g>{active.lines.map((line,lineIndex)=>{
       if(!cutoff||lineIndex>cutoff.line)return <path key={`planned-${lineIndex}`} className="svg-trip-route" d={svgPath(line.projected)} stroke={loopColors[selectedLoop]} strokeWidth="4"/>;
@@ -48,7 +63,15 @@ function TripRouteOverlay({posts,selectedLoop,liveState}:{posts:TripPost[];selec
       return <g key={`split-${lineIndex}`}>{completed.length>1&&<path className="svg-trip-route" d={svgPath(completed)} stroke="#7c3aed" strokeWidth="4"/>}{remaining.length>1&&<path className="svg-trip-route" d={svgPath(remaining)} stroke={loopColors[selectedLoop]} strokeWidth="4"/>}</g>;
     })}</g>
     <g className="svg-trip-labels" dangerouslySetInnerHTML={{__html:active.labelsMarkup}}/>
-    <g>{active.stops.map((stop)=><circle key={stop.name} cx={stop.projected[0]} cy={stop.projected[1]} r="6" fill={checkpoints.some((point)=>milesBetween(point,stop.coordinates)<=30)?"#7c3aed":"#8b1e1e"} stroke="#fffdf8" strokeWidth="2.5"/>)}</g>
+    <g>{active.stops.map((stop)=>{
+      const entries=entriesByStop.get(stop.name)??[];
+      const open=()=>onSelectStop({name:stop.name,posts:entries});
+      return <g key={stop.name} className="map-destination" role="button" tabIndex={0} aria-label={`${stop.name}: ${entries.length?`${entries.length} journal ${entries.length===1?"entry":"entries"}`:"not visited yet"}`} onPointerDown={(event)=>event.stopPropagation()} onClick={open} onKeyDown={(event)=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();open();}}}>
+        <title>{entries.length?`${stop.name} · ${entries.length} journal ${entries.length===1?"entry":"entries"}`:`${stop.name} · no journal entries yet`}</title>
+        <circle cx={stop.projected[0]} cy={stop.projected[1]} r="17" fill="transparent"/>
+        <circle className="stop-dot" cx={stop.projected[0]} cy={stop.projected[1]} r="6" fill={entries.length?"#7c3aed":"#8b1e1e"} stroke="#fffdf8" strokeWidth="2.5" pointerEvents="none"/>
+      </g>;
+    })}</g>
     {vanPosition&&<g aria-label={`Current location: ${liveState?.currentLocationName??"Current location"}`}><title>{`Current location: ${liveState?.currentLocationName??"Current location"}`}</title><image href="/images/minivan-current-location.png" x={vanPosition[0]-24} y={vanPosition[1]-27} width="48" height="27" preserveAspectRatio="xMidYMid meet" transform={vanFacesLeft?`translate(${vanPosition[0]*2} 0) scale(-1 1)`:undefined}/></g>}
   </svg>;
 }
@@ -64,7 +87,7 @@ const loopConfig = {
 
 export function TripMap({ posts, compact = false, center,tripState }: TripMapProps) {
   const liveState=useMemo<TripMapState|undefined>(()=>{const newestPost=posts.slice().sort((a,b)=>b.entryDate.localeCompare(a.entryDate)||b.publishedAt.localeCompare(a.publishedAt))[0];return newestPost?{currentLocationName:newestPost.locationName,latitude:newestPost.latitude,longitude:newestPost.longitude,activeLoop:newestPost.loopNumber??1}:tripState;},[posts,tripState]);
-  const container = useRef<HTMLDivElement>(null); const fallbackMap = useRef<HTMLDivElement>(null); const map = useRef<maplibregl.Map | null>(null); const fallbackView = useRef({ scale: 1, x: 0, y: 0 }); const fallbackDrag = useRef<{ pointerId: number; x: number; y: number } | null>(null); const fallbackTouch = useRef<{ distance: number; midpointX: number; midpointY: number; scale: number; x: number; y: number } | null>(null); const [selectedPost, setSelectedPost] = useState<TripPost | null>(null); const [selectedLoop, setSelectedLoop] = useState<LoopId>(liveState?.activeLoop??1); const [mapError, setMapError] = useState<string | null>(null);
+  const container = useRef<HTMLDivElement>(null); const fallbackMap = useRef<HTMLDivElement>(null); const map = useRef<maplibregl.Map | null>(null); const fallbackView = useRef({ scale: 1, x: 0, y: 0 }); const fallbackDrag = useRef<{ pointerId: number; x: number; y: number } | null>(null); const fallbackTouch = useRef<{ distance: number; midpointX: number; midpointY: number; scale: number; x: number; y: number } | null>(null); const [selectedPost, setSelectedPost] = useState<TripPost | null>(null); const [selectedPlace,setSelectedPlace]=useState<SelectedPlace|null>(null); const [selectedLoop, setSelectedLoop] = useState<LoopId>(liveState?.activeLoop??1); const [mapError, setMapError] = useState<string | null>(null);
   useEffect(() => {
     if (!container.current || map.current) return;
     let instance: maplibregl.Map;
@@ -108,7 +131,7 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
       renderFallbackView();
     };
     const handleFallbackPointerDown = (event: PointerEvent) => {
-      if (event.pointerType === "touch" || fallbackView.current.scale <= 1 || event.button > 0 || (event.target as HTMLElement).closest("button, a, .maplibregl-control-container")) return;
+      if (event.pointerType === "touch" || fallbackView.current.scale <= 1 || event.button > 0 || (event.target as Element).closest("button, a, .map-destination, .maplibregl-control-container")) return;
       fallbackDrag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
       mapSurface.setPointerCapture(event.pointerId);
     };
@@ -181,12 +204,17 @@ export function TripMap({ posts, compact = false, center,tripState }: TripMapPro
   }, [center, compact, posts, liveState]);
 
   return <div className={`trip-map-shell relative overflow-hidden ${compact ? "trip-map-shell-compact h-72 rounded-3xl bg-[#d9ddd5]" : "trip-map-shell-main h-[62vh] min-h-[500px] max-h-[760px] rounded-[1.75rem] bg-[#d6e2e3] sm:min-h-[560px]"}`}>
-    {!compact && <div ref={fallbackMap} className="trip-map-fallback absolute left-0 top-0 z-0 h-full w-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: "url('/data/us-map-basemap.svg?v=live-map-2')" }}><TripRouteOverlay posts={posts} selectedLoop={selectedLoop} liveState={liveState}/></div>}
+    {!compact && <div ref={fallbackMap} className="trip-map-fallback absolute left-0 top-0 z-[2] h-full w-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: "url('/data/us-map-basemap.svg?v=live-map-2')" }}><TripRouteOverlay posts={posts} selectedLoop={selectedLoop} liveState={liveState} onSelectStop={setSelectedPlace}/></div>}
     <div ref={container} className="trip-map-canvas absolute inset-0 z-[1]" aria-label={compact ? "Map showing this journal entry location" : "Interactive map of the planned and completed road trip route"} />
-    {!compact && <div aria-hidden="true" className="map-gesture-hint"><span className="map-tip-desktop">Drag to move · Scroll to zoom</span><span className="map-tip-mobile">Use two fingers to move or zoom · One finger scrolls the page</span></div>}
-    {mapError && <div role="status" className="absolute inset-x-4 top-4 z-10 rounded-xl bg-white/95 p-4 text-sm shadow-lg"><strong>Route preview.</strong> {mapError}</div>}
-    {!compact && <div className="map-loop-key absolute bottom-16 left-4 z-10 w-[min(18rem,calc(100%-2rem))] rounded-xl bg-[#fffdf8]/95 p-3 text-xs shadow-lg backdrop-blur sm:bottom-4"><p className="mb-2 font-bold text-forest">Planned loops</p><div className="space-y-1.5">{([1, 2] as const).map((loop) => <button key={loop} type="button" aria-pressed={selectedLoop === loop} onClick={() => setSelectedLoop(loop)} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left font-semibold transition focus-ring ${selectedLoop === loop ? "bg-forest text-white" : "bg-white text-stone-700 hover:bg-stone-100"}`}><span className={`w-6 shrink-0 border-t-2 border-dashed ${loop === 1 ? "border-[#d56a24]" : "border-[#2f78a8]"} ${selectedLoop === loop ? "opacity-100" : "opacity-50"}`} />{loopConfig[loop].name}</button>)}</div><div className="mt-2 flex items-center gap-2 border-t border-stone-200 pt-2 text-[.7rem] text-stone-600"><span className="h-0.5 w-6 rounded bg-[#7c3aed]" />Completed travel</div></div>}
+    {!compact && <div aria-hidden="true" className="map-gesture-hint"><span className="map-tip-desktop">Drag to move · Scroll to zoom · Click a dot for entries</span><span className="map-tip-mobile">Two fingers move or zoom · Tap a dot for entries · One finger scrolls</span></div>}
+    {mapError && <div role="status" className="feedback-info absolute inset-x-4 top-4 z-10 p-4 text-sm shadow-lg"><strong>Route preview.</strong> {mapError}</div>}
+    {!compact && <div className="map-loop-key absolute bottom-16 left-4 z-10 w-[min(18rem,calc(100%-2rem))] rounded-xl bg-[#fffdf8]/95 p-3 text-xs shadow-lg backdrop-blur sm:bottom-4"><p className="mb-2 font-bold text-forest">Planned loops</p><div className="space-y-1.5">{([1, 2] as const).map((loop) => <button key={loop} type="button" aria-pressed={selectedLoop === loop} onClick={() => {setSelectedLoop(loop);setSelectedPlace(null);}} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left font-semibold transition focus-ring ${selectedLoop === loop ? "bg-forest text-white" : "bg-white text-stone-700 hover:bg-stone-100"}`}><span className={`w-6 shrink-0 border-t-2 border-dashed ${loop === 1 ? "border-[#d56a24]" : "border-[#2f78a8]"} ${selectedLoop === loop ? "opacity-100" : "opacity-50"}`} />{loopConfig[loop].name}</button>)}</div><div className="mt-2 flex items-center gap-2 border-t border-stone-200 pt-2 text-[.7rem] text-stone-600"><span className="h-0.5 w-6 rounded bg-[#7c3aed]" />Completed travel</div></div>}
     {!compact && <div className="map-van-key absolute bottom-4 right-4 z-10 flex items-center gap-2 rounded-xl border-2 border-white/80 bg-[#fffdf8]/95 px-3 py-2 text-xs font-bold text-forest shadow-lg backdrop-blur"><span aria-hidden="true" className="van-key-icon" /><span>Current location</span></div>}
+    {!compact&&selectedPlace&&<div className="map-place-popup absolute inset-x-4 top-14 z-20 max-h-[min(58%,24rem)] max-w-sm overflow-y-auto bg-[#fffdf8] p-4 shadow-2xl sm:left-auto sm:right-5">
+      <button onClick={()=>setSelectedPlace(null)} aria-label="Close destination entries" className="absolute right-3 top-2 rounded p-1 text-xl text-stone-500 focus-ring">×</button>
+      <p className="pr-8 text-[.65rem] font-bold uppercase tracking-[.13em] text-sage">Destination journal</p><h3 className="mt-1 font-serif text-xl font-semibold text-forest">{selectedPlace.name}</h3>
+      {selectedPlace.posts.length?<ul className="mt-3 space-y-2 border-t border-stone-200 pt-3">{selectedPlace.posts.map((post)=><li key={post.id}><Link href={`/journal/${post.slug}`} className="block border-l-4 border-[#7c3aed] bg-white px-3 py-2 focus-ring"><span className="block text-[.65rem] font-bold uppercase tracking-wider text-sage">Day {post.tripDay} · {formatDate(post.entryDate)}</span><strong className="mt-0.5 block text-sm text-forest">{post.title}</strong></Link></li>)}</ul>:<p className="mt-3 border-t border-stone-200 pt-3 text-sm text-stone-600">No journal entries from this stop yet.</p>}
+    </div>}
     {selectedPost && <div className="absolute inset-x-4 bottom-4 z-20 max-w-sm rounded-2xl bg-[#fffdf8] p-4 shadow-2xl sm:bottom-auto sm:left-auto sm:right-5 sm:top-5">
       <button onClick={() => setSelectedPost(null)} aria-label="Close entry preview" className="absolute right-3 top-2 rounded p-1 text-xl text-stone-500 focus-ring">×</button><p className="pr-7 text-xs font-bold uppercase tracking-wider text-sage">Day {selectedPost.tripDay} · {formatDate(selectedPost.entryDate)}</p><h3 className="mt-1 font-serif text-xl font-semibold text-forest">{selectedPost.title}</h3><p className="mt-1 flex items-center gap-1 text-sm text-stone-600"><MapPin size={14} />{selectedPost.locationName}</p><Link href={`/journal/${selectedPost.slug}`} className="mt-3 inline-block text-sm font-bold text-terracotta focus-ring">Read full entry →</Link>
     </div>}

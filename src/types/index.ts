@@ -24,6 +24,14 @@ export interface TripPost {
   status: PostStatus;
   tripDay: number;
   mileageToDate: number;
+  milesDrivenThisEntry: number;
+  milesWalked: number;
+  milesRan: number;
+  milesBiked: number;
+  majorCitiesVisited: number;
+  newStatesVisited: number;
+  newNationalParksVisited: number;
+  tanksOfGas: number;
   loopNumber?: 1 | 2;
 }
 

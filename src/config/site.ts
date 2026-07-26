@@ -5,7 +5,7 @@ export const siteConfig = {
   tripStatus: "Currently near El Paso, TX",
   tripStats: [
     { label: "Days", value: "0" },
-    { label: "Driven", value: "0 mi" },
+    { label: "Driven", value: "1,474 mi" },
     { label: "States", value: "1" },
     { label: "National Parks", value: "0" },
     { label: "Major Cities", value: "1" },

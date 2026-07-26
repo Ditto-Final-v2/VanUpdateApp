@@ -10,7 +10,7 @@ const statsSchema = z.object({
 });
 
 function display(value: number) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+  return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
 export async function getTripStats() {

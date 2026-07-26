@@ -15,7 +15,7 @@ const metricFields = [
   ["tanksOfGas", "Tanks of Gas", "0.1"],
 ] as const;
 
-export function JournalEntryForm({ today }: { today: string }) {
+export function JournalEntryForm({ today, currentVanMileage }: { today: string; currentVanMileage: number }) {
   const [state, formAction, pending] = useActionState(publishJournalEntry, initialState);
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -70,12 +70,28 @@ export function JournalEntryForm({ today }: { today: string }) {
     <Field name="entryDate" label="Entry Date" type="date" defaultValue={today} required />
     <Field name="locationName" label="Location Name" required />
     <LocationFields />
-    <Field name="vanMileage" label="Current Van Mileage" type="number" min="0" step="1" defaultValue="0" hint="Enter 0 to reuse the mileage from your most recent entry." required />
+    <Field
+      name="vanMileage"
+      label="Current Van Odometer"
+      type="number"
+      min="0"
+      step="1"
+      defaultValue="0"
+      hint={`Enter 0 to reuse the most recent saved odometer: ${currentVanMileage.toLocaleString("en-US")} mi.`}
+      required
+    />
     {metricFields.map(([name, label, step]) => <Field key={name} name={name} label={label} type="number" min="0" step={step} defaultValue="0" required />)}
     <div className="sm:col-span-2"><label className="form-label" htmlFor="notificationHook">Notification Hook</label><input className="form-input mt-2" id="notificationHook" name="notificationHook" maxLength={180} placeholder="A short subject line that makes readers want to open the entry" /></div>
-    <label className="flex items-center gap-3 border-2 border-dashed border-sage bg-[#eef1e9] p-4 text-sm font-bold text-forest sm:col-span-2">
+    <label className="flex items-start gap-3 border-2 border-dashed border-sage bg-[#eef1e9] p-4 text-sm font-bold text-forest sm:col-span-2">
       <input className="h-5 w-5 accent-[#344d40]" type="checkbox" name="sendNotification" />
-      Send push notification to subscribers when this journal is posted
+      <span>
+        Notify subscribers about this journal entry
+        <span className="mt-1 block text-xs font-normal text-stone-600">
+          Email is added to the delivery queue. Text/MMS is scheduled for the
+          next eligible 7:30 PM Central with the notification hook, cover
+          photo, and entry link.
+        </span>
+      </span>
     </label>
     <fieldset className="border-2 border-dashed border-sage p-4 sm:col-span-2">
       <legend className="px-2 text-sm font-bold uppercase tracking-[.1em] text-forest">Entry photos</legend>

@@ -1,6 +1,178 @@
 import { AdminPlaceholder } from "@/components/admin/admin-placeholder";
 import { createClient } from "@/lib/supabase/server";
 import { isTwilioConfigured } from "@/lib/twilio";
-import { deleteSubscriber,sendQueuedNotifications,setSmsStatus,setSubscriberStatus } from "@/app/admin/subscribers/actions";
+import {
+  deleteSubscriber,
+  sendQueuedNotifications,
+  setSmsStatus,
+  setSubscriberStatus,
+} from "@/app/admin/subscribers/actions";
 
-export default async function AdminSubscribers(){const supabase=await createClient();const [{data:subscribers},{count:queuedEmail},{count:queuedMms}]=await Promise.all([supabase.from("subscribers").select("id,email,name,phone_e164,status,sms_status,created_at").order("created_at",{ascending:false}),supabase.from("notification_sends").select("id",{count:"exact",head:true}).eq("status","queued").eq("channel","email"),supabase.from("notification_sends").select("id",{count:"exact",head:true}).eq("status","queued").eq("channel","mms")]);const emailConfigured=Boolean(process.env.RESEND_API_KEY&&process.env.RESEND_FROM_EMAIL);const mmsConfigured=isTwilioConfigured();const queued=(queuedEmail??0)+(queuedMms??0);return <AdminPlaceholder title="Subscribers" description="Manage email and MMS journal notifications, confirmations, and opt-outs."><div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-2 border-forest bg-white p-4"><div><strong>{subscribers?.length??0} subscribers</strong><p className="text-xs text-stone-600">{queuedEmail??0} emails · {queuedMms??0} MMS queued</p><p className="text-xs text-stone-600">Email {emailConfigured?"configured":"not configured"} · Twilio {mmsConfigured?"configured":"not configured"}</p></div><form action={sendQueuedNotifications}><button className="button-primary" disabled={(!emailConfigured&&!mmsConfigured)||!queued}>Send queued notifications</button></form></div>{(!emailConfigured||!mmsConfigured)&&<p className="mt-4 border-2 border-amber-800 bg-amber-50 p-3 text-sm text-amber-950">{!emailConfigured&&"Add RESEND_API_KEY and RESEND_FROM_EMAIL for email. "}{!mmsConfigured&&"Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_MESSAGING_SERVICE_SID for MMS."}</p>}<div className="mt-5 overflow-x-auto border-2 border-forest bg-white"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-forest text-white"><tr><th className="p-3">Subscriber</th><th className="p-3">Email</th><th className="p-3">Text/MMS</th><th className="p-3">Joined</th><th className="p-3">Actions</th></tr></thead><tbody>{(subscribers??[]).map((subscriber)=><tr key={subscriber.id} className="border-t border-stone-200"><td className="p-3"><strong>{subscriber.name||"—"}</strong><span className="block text-xs text-stone-600">{subscriber.email}</span><span className="block text-xs text-stone-600">{subscriber.phone_e164||"No phone"}</span></td><td className="p-3 capitalize">{subscriber.status}</td><td className="p-3 capitalize">{subscriber.sms_status.replace("_"," ")}</td><td className="p-3">{new Date(subscriber.created_at).toLocaleDateString()}</td><td className="space-x-2 p-3">{subscriber.status!=="active"&&<form action={setSubscriberStatus} className="inline"><input type="hidden" name="id" value={subscriber.id}/><input type="hidden" name="status" value="active"/><button className="text-xs font-bold text-green-800 underline">Email on</button></form>}{subscriber.status==="active"&&<form action={setSubscriberStatus} className="inline"><input type="hidden" name="id" value={subscriber.id}/><input type="hidden" name="status" value="unsubscribed"/><button className="text-xs font-bold text-amber-800 underline">Email off</button></form>}{subscriber.phone_e164&&subscriber.sms_status!=="active"&&<form action={setSmsStatus} className="inline"><input type="hidden" name="id" value={subscriber.id}/><input type="hidden" name="smsStatus" value="active"/><button className="text-xs font-bold text-green-800 underline">Text on</button></form>}{subscriber.sms_status==="active"&&<form action={setSmsStatus} className="inline"><input type="hidden" name="id" value={subscriber.id}/><input type="hidden" name="smsStatus" value="unsubscribed"/><button className="text-xs font-bold text-amber-800 underline">Text off</button></form>}<form action={deleteSubscriber} className="inline"><input type="hidden" name="id" value={subscriber.id}/><button className="text-xs font-bold text-red-800 underline">Delete</button></form></td></tr>)}</tbody></table></div></AdminPlaceholder>}
+export default async function AdminSubscribers() {
+  const supabase = await createClient();
+  const [
+    { data: subscribers },
+    { count: queuedEmail },
+    { count: queuedMms },
+    { count: scheduledMms },
+  ] = await Promise.all([
+    supabase
+      .from("subscribers")
+      .select("id,email,name,phone_e164,status,sms_status,created_at")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("notification_sends")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "queued")
+      .eq("channel", "email"),
+    supabase
+      .from("notification_sends")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "queued")
+      .eq("channel", "mms"),
+    supabase
+      .from("notification_sends")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "scheduled")
+      .eq("channel", "mms"),
+  ]);
+  const emailConfigured = Boolean(
+    process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL,
+  );
+  const mmsConfigured = isTwilioConfigured();
+  const sendableQueued =
+    (emailConfigured ? (queuedEmail ?? 0) : 0) +
+    (mmsConfigured ? (queuedMms ?? 0) : 0);
+
+  return (
+    <AdminPlaceholder
+      title="Subscribers"
+      description="Manage email and MMS journal notifications, confirmations, and opt-outs."
+    >
+      <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-2 border-forest bg-white p-4">
+        <div>
+          <strong>{subscribers?.length ?? 0} subscribers</strong>
+          <p className="text-xs text-stone-600">
+            {queuedEmail ?? 0} emails queued · {queuedMms ?? 0} MMS recovery
+            queue · {scheduledMms ?? 0} MMS scheduled
+          </p>
+          <p className="text-xs text-stone-600">
+            Email {emailConfigured ? "configured" : "not configured"} · Twilio{" "}
+            {mmsConfigured ? "configured" : "not configured"}
+          </p>
+          <p className="mt-1 max-w-xl text-xs text-stone-600">
+            New selected text alerts schedule automatically for the next
+            eligible 7:30 PM Central. Publishing after 7:14 PM schedules the
+            following evening.
+          </p>
+        </div>
+        <form action={sendQueuedNotifications}>
+          <button className="button-primary" disabled={!sendableQueued}>
+            Send remaining queued now
+          </button>
+        </form>
+      </div>
+
+      {(!emailConfigured || !mmsConfigured) && (
+        <p className="mt-4 border-2 border-amber-800 bg-amber-50 p-3 text-sm text-amber-950">
+          {!emailConfigured &&
+            "Add RESEND_API_KEY and RESEND_FROM_EMAIL for email. "}
+          {!mmsConfigured &&
+            "Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_MESSAGING_SERVICE_SID for MMS."}
+        </p>
+      )}
+
+      <div className="mt-5 overflow-x-auto border-2 border-forest bg-white">
+        <table className="w-full min-w-[760px] text-left text-sm">
+          <thead className="bg-forest text-white">
+            <tr>
+              <th className="p-3">Subscriber</th>
+              <th className="p-3">Email</th>
+              <th className="p-3">Text/MMS</th>
+              <th className="p-3">Joined</th>
+              <th className="p-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(subscribers ?? []).map((subscriber) => (
+              <tr
+                key={subscriber.id}
+                className="border-t border-stone-200"
+              >
+                <td className="p-3">
+                  <strong>{subscriber.name || "—"}</strong>
+                  <span className="block text-xs text-stone-600">
+                    {subscriber.email}
+                  </span>
+                  <span className="block text-xs text-stone-600">
+                    {subscriber.phone_e164 || "No phone"}
+                  </span>
+                </td>
+                <td className="p-3 capitalize">{subscriber.status}</td>
+                <td className="p-3 capitalize">
+                  {subscriber.sms_status.replace("_", " ")}
+                </td>
+                <td className="p-3">
+                  {new Date(subscriber.created_at).toLocaleDateString()}
+                </td>
+                <td className="space-x-2 p-3">
+                  {subscriber.status !== "active" && (
+                    <form action={setSubscriberStatus} className="inline">
+                      <input type="hidden" name="id" value={subscriber.id} />
+                      <input type="hidden" name="status" value="active" />
+                      <button className="text-xs font-bold text-green-800 underline">
+                        Email on
+                      </button>
+                    </form>
+                  )}
+                  {subscriber.status === "active" && (
+                    <form action={setSubscriberStatus} className="inline">
+                      <input type="hidden" name="id" value={subscriber.id} />
+                      <input type="hidden" name="status" value="unsubscribed" />
+                      <button className="text-xs font-bold text-amber-800 underline">
+                        Email off
+                      </button>
+                    </form>
+                  )}
+                  {subscriber.phone_e164 &&
+                    subscriber.sms_status !== "active" && (
+                      <form action={setSmsStatus} className="inline">
+                        <input type="hidden" name="id" value={subscriber.id} />
+                        <input
+                          type="hidden"
+                          name="smsStatus"
+                          value="active"
+                        />
+                        <button className="text-xs font-bold text-green-800 underline">
+                          Text on
+                        </button>
+                      </form>
+                    )}
+                  {subscriber.sms_status === "active" && (
+                    <form action={setSmsStatus} className="inline">
+                      <input type="hidden" name="id" value={subscriber.id} />
+                      <input
+                        type="hidden"
+                        name="smsStatus"
+                        value="unsubscribed"
+                      />
+                      <button className="text-xs font-bold text-amber-800 underline">
+                        Text off
+                      </button>
+                    </form>
+                  )}
+                  <form action={deleteSubscriber} className="inline">
+                    <input type="hidden" name="id" value={subscriber.id} />
+                    <button className="text-xs font-bold text-red-800 underline">
+                      Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </AdminPlaceholder>
+  );
+}
