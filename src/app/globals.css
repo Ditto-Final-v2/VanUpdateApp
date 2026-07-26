@@ -81,7 +81,13 @@ body {
 .retro-article-surface { background: rgba(229,232,225,.97); color: #263538; }
 .retro-article-surface .text-forest { color: #18382f !important; }
 .retro-article-surface .text-stone-500, .retro-article-surface .text-stone-600, .retro-article-surface .text-stone-700 { color: #47534f !important; }
-.retro-feature img, .retro-post-card img { filter: saturate(.92) contrast(1.04); }
+.retro-feature img:not(.post-cover-backdrop), .retro-post-card img:not(.post-cover-backdrop) { filter: saturate(.92) contrast(1.04); }
+.post-cover-backdrop {
+  transform: scale(1.35);
+  filter: blur(42px) brightness(.58) saturate(.72) contrast(.92);
+  opacity: .72;
+  will-change: transform, filter;
+}
 .retro-post-card { border-radius: 0 !important; }
 .retro-post-card > a { border-bottom: 4px solid #f2cf74; }
 .retro-post-card a { color: var(--web-blue); text-decoration: underline; text-decoration-thickness: 1px; }
