@@ -32,9 +32,9 @@ function associatePostsWithStops(stops:OverlayStop[],posts:TripPost[]){
   const associations=new Map<string,TripPost[]>(stops.map((stop)=>[stop.name,[]]));
   posts.forEach((post)=>{
     const named=stops.filter((stop)=>placeNamesMatch(stop.name,post.locationName));
-    const candidates=named.length?named:stops;
-    const nearest=candidates.map((stop)=>({stop,miles:milesBetween(stop.coordinates,[post.longitude,post.latitude])})).sort((a,b)=>a.miles-b.miles)[0];
-    if(nearest&&(named.length||nearest.miles<=75))associations.get(nearest.stop.name)?.push(post);
+    if(!named.length)return;
+    const nearest=named.map((stop)=>({stop,miles:milesBetween(stop.coordinates,[post.longitude,post.latitude])})).sort((a,b)=>a.miles-b.miles)[0];
+    if(nearest)associations.get(nearest.stop.name)?.push(post);
   });
   associations.forEach((entries)=>entries.sort((a,b)=>b.entryDate.localeCompare(a.entryDate)||b.publishedAt.localeCompare(a.publishedAt)));
   return associations;
@@ -86,7 +86,7 @@ const loopConfig = {
 } as const;
 
 export function TripMap({ posts, compact = false, center,tripState }: TripMapProps) {
-  const liveState=useMemo<TripMapState|undefined>(()=>{const newestPost=posts.slice().sort((a,b)=>b.entryDate.localeCompare(a.entryDate)||b.publishedAt.localeCompare(a.publishedAt))[0];return newestPost?{currentLocationName:newestPost.locationName,latitude:newestPost.latitude,longitude:newestPost.longitude,activeLoop:newestPost.loopNumber??1}:tripState;},[posts,tripState]);
+  const liveState=useMemo<TripMapState|undefined>(()=>{const newestPost=posts.slice().sort((a,b)=>b.entryDate.localeCompare(a.entryDate)||b.publishedAt.localeCompare(a.publishedAt))[0];return newestPost?{currentLocationName:newestPost.entryLocationName,latitude:newestPost.latitude,longitude:newestPost.longitude,activeLoop:newestPost.loopNumber??1}:tripState;},[posts,tripState]);
   const container = useRef<HTMLDivElement>(null); const fallbackMap = useRef<HTMLDivElement>(null); const map = useRef<maplibregl.Map | null>(null); const fallbackView = useRef({ scale: 1, x: 0, y: 0 }); const fallbackDrag = useRef<{ pointerId: number; x: number; y: number } | null>(null); const fallbackTouch = useRef<{ distance: number; midpointX: number; midpointY: number; scale: number; x: number; y: number } | null>(null); const [selectedPost, setSelectedPost] = useState<TripPost | null>(null); const [selectedPlace,setSelectedPlace]=useState<SelectedPlace|null>(null); const [selectedLoop, setSelectedLoop] = useState<LoopId>(liveState?.activeLoop??1); const [mapError, setMapError] = useState<string | null>(null);
   useEffect(() => {
     if (!container.current || map.current) return;

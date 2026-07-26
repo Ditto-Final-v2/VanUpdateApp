@@ -23,7 +23,7 @@ export async function updatePost(_state: EditPostState, formData: FormData): Pro
   const removed = (existing ?? []).map((photo) => photo.storage_path).filter((path) => !retained.includes(path));
   const v = parsed.data;
   const { error } = await supabase.rpc("update_journal_entry", {
-    p_post_id:id,p_title:v.title,p_entry_date:v.entryDate,p_location_name:v.locationName,p_van_mileage:v.vanMileage,
+    p_post_id:id,p_title:v.title,p_entry_date:v.entryDate,p_location_name:v.entryLocationName,p_van_mileage:v.vanMileage,
     p_miles_walked:v.milesWalked,p_miles_ran:v.milesRan,p_miles_biked:v.milesBiked,p_major_cities_visited:v.majorCitiesVisited,
     p_new_states_visited:v.newStatesVisited,p_new_national_parks_visited:v.newNationalParksVisited,p_tanks_of_gas:v.tanksOfGas,
     p_notification_hook:v.notificationHook,p_body:v.body,p_status:v.status,p_retained_photo_paths:retained,p_new_photo_paths:added,
@@ -33,9 +33,9 @@ export async function updatePost(_state: EditPostState, formData: FormData): Pro
   const keptDetails=detailPaths.map((path,index)=>({path,alt:detailAlts[index]??"",caption:detailCaptions[index]??""})).filter((detail)=>retained.includes(detail.path));
   const allDetails=[...keptDetails,...added.map((path,index)=>({path,alt:newAlts[index]??"",caption:newCaptions[index]??""}))];
   const {error:detailError}=await supabase.rpc("update_journal_photo_details",{p_post_id:id,p_paths:allDetails.map((detail)=>detail.path),p_alt_texts:allDetails.map((detail)=>detail.alt),p_captions:allDetails.map((detail)=>detail.caption)});if(detailError)return{message:detailError.message};
-  const { error:locationError } = await supabase.from("posts").update({latitude:v.latitude,longitude:v.longitude,loop_number:v.loopNumber}).eq("id",id);
+  const { error:locationError } = await supabase.from("posts").update({activity_location_name:v.activityLocationName,latitude:v.latitude,longitude:v.longitude,loop_number:v.loopNumber}).eq("id",id);
   if(locationError)return {message:locationError.message};
-  if(v.status==="published") { const {data:latest}=await supabase.from("posts").select("id").eq("status","published").order("entry_date",{ascending:false}).order("published_at",{ascending:false}).limit(1).maybeSingle();if(latest?.id===id)await supabase.from("trips").update({current_location_name:v.locationName,current_latitude:v.latitude,current_longitude:v.longitude,active_loop:v.loopNumber}).eq("status","active"); }
+  if(v.status==="published") { const {data:latest}=await supabase.from("posts").select("id").eq("status","published").order("entry_date",{ascending:false}).order("published_at",{ascending:false}).limit(1).maybeSingle();if(latest?.id===id)await supabase.from("trips").update({current_location_name:v.entryLocationName,current_latitude:v.latitude,current_longitude:v.longitude,active_loop:v.loopNumber}).eq("status","active"); }
   if (removed.length) await supabase.storage.from("trip-photos").remove(removed);
   revalidatePath("/"); revalidatePath("/admin/posts"); revalidatePath(`/admin/posts/${id}/edit`);
   redirect("/admin/posts");

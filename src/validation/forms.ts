@@ -23,7 +23,8 @@ const nonnegativeInteger = z.coerce.number().int().nonnegative("Statistics must 
 export const journalEntrySchema = z.object({
   title: z.string().trim().min(1, "Enter a title.").max(180),
   entryDate: z.iso.date("Enter a valid entry date."),
-  locationName: z.string().trim().min(1, "Enter a location name.").max(200),
+  entryLocationName: z.string().trim().min(1, "Enter where the journal entry was made.").max(200),
+  activityLocationName: z.string().trim().min(1, "Enter the location of the day’s main activities.").max(200),
   latitude: z.coerce.number().min(-90).max(90),
   longitude: z.coerce.number().min(-180).max(180),
   loopNumber: z.coerce.number().int().min(1).max(2),

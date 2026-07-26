@@ -68,7 +68,8 @@ export function JournalEntryForm({ today, currentVanMileage }: { today: string; 
   return <form onSubmit={submit} className="mt-8 grid gap-5 border-2 border-forest bg-white p-5 shadow-[5px_5px_0_#1f352d] sm:grid-cols-2 sm:p-7">
     <Field name="title" label="Title" required />
     <Field name="entryDate" label="Entry Date" type="date" defaultValue={today} required />
-    <Field name="locationName" label="Location Name" required />
+    <Field name="entryLocationName" label="Location the Entry Was Made" hint="This controls the current van location. It is not displayed as the journal article’s location." required />
+    <Field name="activityLocationName" label="Location of Main Activities" hint="This is displayed to readers and connects the entry to the matching destination dot." required />
     <LocationFields />
     <Field
       name="vanMileage"

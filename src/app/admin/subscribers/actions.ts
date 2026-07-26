@@ -61,7 +61,7 @@ export async function sendQueuedNotifications() {
   const { data } = await supabase
     .from("notification_sends")
     .select(
-      "id,subject,channel,attempt_count,subscriber:subscribers(email,name,phone_e164,unsubscribe_token,status,sms_status),post:posts(id,slug,title,excerpt,notification_title,trip_day,entry_date,location_name,cover_image_path)",
+      "id,subject,channel,attempt_count,subscriber:subscribers(email,name,phone_e164,unsubscribe_token,status,sms_status),post:posts(id,slug,title,excerpt,notification_title,trip_day,entry_date,activity_location_name,cover_image_path)",
     )
     .eq("status", "queued")
     .order("created_at")
@@ -114,7 +114,7 @@ export async function sendQueuedNotifications() {
           notificationTitle: post.notification_title,
           tripDay: post.trip_day,
           entryDate: post.entry_date,
-          locationName: post.location_name,
+          locationName: post.activity_location_name,
           hasCoverImage: Boolean(post.cover_image_path),
         },
         siteUrl: site,

@@ -14,6 +14,7 @@ export interface TripPost {
   body: string[];
   entryDate: string;
   publishedAt: string;
+  entryLocationName: string;
   locationName: string;
   latitude: number;
   longitude: number;

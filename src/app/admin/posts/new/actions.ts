@@ -32,7 +32,7 @@ export async function publishJournalEntry(
     p_slug: makeSlug(value.title),
     p_title: value.title,
     p_entry_date: value.entryDate,
-    p_location_name: value.locationName,
+    p_location_name: value.entryLocationName,
     p_van_mileage: value.vanMileage,
     p_miles_walked: value.milesWalked,
     p_miles_ran: value.milesRan,
@@ -53,10 +53,10 @@ export async function publishJournalEntry(
   if (postId) {
     const {error:detailError}=await supabase.rpc("update_journal_photo_details",{p_post_id:postId,p_paths:photoPaths,p_alt_texts:photoAlts,p_captions:photoCaptions});
     if(detailError)return{message:detailError.message};
-    const { error: locationError } = await supabase.from("posts").update({ latitude:value.latitude, longitude:value.longitude, loop_number:value.loopNumber }).eq("id",postId);
+    const { error: locationError } = await supabase.from("posts").update({ activity_location_name:value.activityLocationName, latitude:value.latitude, longitude:value.longitude, loop_number:value.loopNumber }).eq("id",postId);
     if (locationError) return { message:locationError.message };
     const {data:latest}=await supabase.from("posts").select("id").eq("status","published").order("entry_date",{ascending:false}).order("published_at",{ascending:false}).limit(1).maybeSingle();
-    if(latest?.id===postId)await supabase.from("trips").update({ current_location_name:value.locationName,current_latitude:value.latitude,current_longitude:value.longitude,active_loop:value.loopNumber }).eq("status","active");
+    if(latest?.id===postId)await supabase.from("trips").update({ current_location_name:value.entryLocationName,current_latitude:value.latitude,current_longitude:value.longitude,active_loop:value.loopNumber }).eq("status","active");
     if (value.sendNotification) {
       // The queue remains intact if provider scheduling is unavailable, so the
       // notification can still be recovered from the subscriber admin page.
