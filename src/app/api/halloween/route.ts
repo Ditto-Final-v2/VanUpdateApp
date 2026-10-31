@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 const defaults = {location:'Poinsettia Mine',information:'Halloween underground. Join Curtis at the mine and the Dallas watch party for a night on the abandoned side of Road & Country.',nuggets:0,goal:100,chat_open:true};
-function sign(s:string){return createHmac('sha256', process.env.HALLOWEEN_SESSION_SECRET || '').update(s).digest('hex');}
-function role(req:NextRequest){const c=req.cookies.get('halloween')?.value || '';const [r,e,s]=c.split('.');if(!process.env.HALLOWEEN_SESSION_SECRET || !s || Number(e)<Date.now())return '';const expected=sign(`${r}.${e}`);return s.length===expected.length && timingSafeEqual(Buffer.from(s),Buffer.from(expected)) ? r : '';}
+// Prefer a dedicated secret. Existing deployments can derive an isolated signing
+// key from their server-only Supabase credential without exposing that credential.
+function sessionSecret(){
+ if(process.env.HALLOWEEN_SESSION_SECRET)return process.env.HALLOWEEN_SESSION_SECRET;
+ const serverKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
+ return serverKey ? createHmac('sha256',serverKey).update('road-country:halloween-session:v1').digest('hex') : null;
+}
+function sign(s:string){const secret=sessionSecret();if(!secret)throw Error('Session signing is not configured.');return createHmac('sha256',secret).update(s).digest('hex');}
+function role(req:NextRequest){const c=req.cookies.get('halloween')?.value || '';const [r,e,s]=c.split('.');if(!sessionSecret() || !['host','admin'].includes(r) || !s || !Number.isFinite(Number(e)) || Number(e)<Date.now())return '';const expected=sign(`${r}.${e}`);return s.length===expected.length && timingSafeEqual(Buffer.from(s),Buffer.from(expected)) ? r : '';}
 function streams(){return [{id:'curtis',name:'Curtis · Poinsettia Mine',url:process.env.HALLOWEEN_CURTIS_PLAYER_URL || ''},{id:'dallas',name:'Dallas · Watch party',url:process.env.HALLOWEEN_DALLAS_PLAYER_URL || ''}];}
 export async function GET(req:NextRequest){
  let event=defaults,messages:unknown[]=[];let configured=false;
@@ -15,7 +22,7 @@ export async function POST(req:NextRequest){
  try{
  const b=await req.json();const r=role(req);
  if(b.action==='login'){
- if(!process.env.HALLOWEEN_SESSION_SECRET)throw Error('Session configuration is needed before host and admin login can work.');
+ if(!sessionSecret())throw Error('Set HALLOWEEN_SESSION_SECRET in the website hosting settings to enable login.');
  const valid=b.role==='admin'?b.password===(process.env.HALLOWEEN_ADMIN_PASSWORD || '789'):b.role==='host'&&b.password===(process.env.HALLOWEEN_HOST_PASSWORD || '5678');
  if(!valid)return NextResponse.json({error:'Incorrect password'},{status:401});
  const value=`${b.role}.${Date.now()+12*3600*1000}`;const res=NextResponse.json({ok:true});res.cookies.set('halloween',`${value}.${sign(value)}`,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'strict',path:'/',maxAge:43200});return res;
@@ -39,3 +46,4 @@ export async function POST(req:NextRequest){
  return NextResponse.json({ok:true});
  }catch(e){return NextResponse.json({error:e instanceof Error?e.message:'Request failed'},{status:400});}
 }
+
