@@ -23,13 +23,13 @@ export async function POST(req:NextRequest){
  const b=await req.json();const r=role(req);
  if(b.action==='login'){
  if(!sessionSecret())throw Error('Set HALLOWEEN_SESSION_SECRET in the website hosting settings to enable login.');
- const valid=b.role==='admin'?b.password===(process.env.HALLOWEEN_ADMIN_PASSWORD || '789'):b.role==='host'&&b.password===(process.env.HALLOWEEN_HOST_PASSWORD || '5678');
+ const password=b.role==='admin'?process.env.HALLOWEEN_ADMIN_PASSWORD:b.role==='host'?process.env.HALLOWEEN_HOST_PASSWORD:undefined;
+ const valid=typeof password==='string'&&password.length>=16&&typeof b.password==='string'&&Buffer.byteLength(b.password)===Buffer.byteLength(password)&&timingSafeEqual(Buffer.from(b.password),Buffer.from(password));
  if(!valid)return NextResponse.json({error:'Incorrect password'},{status:401});
  const value=`${b.role}.${Date.now()+12*3600*1000}`;const res=NextResponse.json({ok:true});res.cookies.set('halloween',`${value}.${sign(value)}`,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'strict',path:'/',maxAge:43200});return res;
  }
  if(b.action==='broadcast'){
- if(r!=='host'&&r!=='admin')return NextResponse.json({error:'Sign in first'},{status:403});
- const url=process.env.HALLOWEEN_DALLAS_WHIP_URL;if(!url)throw Error('Dallas Cloudflare live input has not been connected yet.');return NextResponse.json({url});
+ return NextResponse.json({error:'Use the private broadcaster at /halloween/dallas.'},{status:410,headers:{'Cache-Control':'no-store'}});
  }
  const db=createAdminClient();
  if(b.action==='message'){
@@ -46,4 +46,3 @@ export async function POST(req:NextRequest){
  return NextResponse.json({ok:true});
  }catch(e){return NextResponse.json({error:e instanceof Error?e.message:'Request failed'},{status:400});}
 }
-

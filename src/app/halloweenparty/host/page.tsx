@@ -1,2 +1,2 @@
-import Party from '../party';
-export default function Page(){return <Party mode="host"/>;}
+import { redirect } from 'next/navigation';
+export default function Page(){redirect('/halloween/dallas');}
