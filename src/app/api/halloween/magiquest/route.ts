@@ -17,9 +17,12 @@ async function findPlayer(req:NextRequest){
 export async function GET(req:NextRequest){
  try{
   const player=await findPlayer(req);
+  const db=createAdminClient();
+  const catalog=await db.from('halloween_quests').select('id',{count:'exact',head:true});
+  if(catalog.error)throw Error('Could not load the quest pool.');
+  const totalQuests=catalog.count||0;
   let quest=null,completed=0;
   if(player){
-   const db=createAdminClient();
    const completion=await db.from('halloween_completions').select('*',{count:'exact',head:true}).eq('player_id',player.id);
    if(completion.error)throw Error('Could not load your progress.');
    completed=completion.count||0;
@@ -29,7 +32,7 @@ export async function GET(req:NextRequest){
     quest=result.data;
    }
   }
-  return NextResponse.json({player,quest,completed,serverTime:Date.now()},{headers:{'Cache-Control':'no-store'}});
+  return NextResponse.json({player,quest,completed,totalQuests,serverTime:Date.now()},{headers:{'Cache-Control':'no-store'}});
  }catch(e){return NextResponse.json({error:e instanceof Error?e.message:'Could not load MagiQuest.'},{status:503});}
 }
 export async function POST(req:NextRequest){
