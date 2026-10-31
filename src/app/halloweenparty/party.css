@@ -10,3 +10,4 @@
 
 .hp select{display:block;width:100%;margin-top:4px;padding:9px;background:#141711;color:#e5e9df;border:1px solid #495040;border-radius:3px;max-width:100%}
 
+.hp-chat .hp-compose .hp-chat-identity,.hp-chat-error{grid-column:1/-1;margin:0;font-size:12px;overflow-wrap:anywhere}.hp-chat-identity{color:#aeb4a6}.hp-chat-error{color:#f0b38e}.hp-sender-dialog{width:min(360px,calc(100vw - 32px));background:#20221f;color:#dcded9;border:1px solid #495040;border-radius:5px;padding:20px}.hp-sender-dialog::backdrop{background:#000a}.hp-chat .hp-sender-dialog form{display:grid;grid-template-columns:1fr;padding:0;border:0}.hp-sender-dialog p{margin:0;font-size:13px}.hp-chat .hp-sender-dialog label:first-child{max-width:none}
