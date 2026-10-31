@@ -1,6 +1,7 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
+import {Check,ChevronRight,Flag,FlaskConical,Ghost,Timer} from 'lucide-react';
 import Party from '../party';
 import AboutMines from '../mines/about-mines';
 import '../party.css';
@@ -53,14 +54,20 @@ export default function MagiQuest({introduction=false}:{introduction?:boolean}){
  </div></div>;
  const player=data.player;
  const allComplete=data.totalQuests>0&&data.completed>=data.totalQuests;
- const questPanel=<section className="hp-quest" aria-labelledby="quest-title">
-  <p className="hp-eyebrow">{player.name} · {data.completed} / {data.totalQuests} QUESTS COMPLETE</p>
-  <h2>Your Mercury Tonic: {player.tonic.toLocaleString()}</h2>
-  <h3 id="quest-title">{data.quest?'Your current !quest':allComplete?'Every quest complete!':'Your first quest awaits'}</h3>
-  <p>{data.quest?.description||(allComplete?'You’ve completed every haunting. The spirits salute you.':'Press !quest to receive your first mission.')}</p>
-  {data.quest&&<p className="hp-quest-reward">Reward: {data.quest.reward} Mercury Tonic</p>}
-  <button disabled={busy||remaining>0||allComplete} onClick={()=>void act({action:data.quest?'!done':'!quest',questId:data.quest?.id})}>{remaining>0?`Wait ${remaining}s`:busy?'Summoning…':data.quest?'!done':allComplete?'All quests complete':'!quest'}</button>
-  <small>Complete your quest, then press !done. You can also type !quest or !done in chat.</small>
+ const questPanel=<section id="player-quest" className="hp-quest" aria-labelledby="quest-title">
+  <div className="hp-quest-heading"><div><p className="hp-eyebrow">A LITTLE MISCHIEF. A LITTLE MAGIC.</p><h2><Ghost size={24} aria-hidden="true"/> MagiQuest</h2></div><span className="hp-quest-player">{player.name}</span></div>
+  <div className="hp-quest-stats"><div><span>Your Mercury Tonic</span><strong><FlaskConical size={20} aria-hidden="true"/>{player.tonic.toLocaleString()}</strong></div><div><span>Quests complete</span><strong>{data.completed}<small>/ {data.totalQuests}</small></strong></div></div>
+  <progress className="hp-quest-progress" aria-label="Quests completed" value={data.completed} max={data.totalQuests||1}/>
+  <div className="hp-quest-mission"><h3 id="quest-title">{data.quest?'Your current !quest':allComplete?'Every quest complete!':data.completed>0?'A new quest awaits':'Your first quest awaits'}</h3>
+   <p>{data.quest?.description||(allComplete?'You’ve completed every haunting. The spirits salute you.':'Press !quest to receive your next mission.')}</p>
+   {data.quest&&<span className="hp-quest-reward"><FlaskConical size={16} aria-hidden="true"/> +{data.quest.reward} Mercury Tonic</span>}
+  </div>
+  <button className="hp-quest-action" aria-label={remaining>0?`Quest cooldown: ${remaining} seconds remaining`:busy?'Saving quest':data.quest?'!done':allComplete?'All quests complete':'!quest'} disabled={busy||remaining>0||allComplete} onClick={()=>void act({action:data.quest?'!done':'!quest',questId:data.quest?.id})}>
+   {remaining>0?<Timer size={25} aria-hidden="true"/>:data.quest||allComplete?<Check size={25} aria-hidden="true"/>:<Flag size={25} aria-hidden="true"/>}
+   <span><strong>{remaining>0?`Wait ${remaining}s`:busy?'Summoning…':data.quest?'!done':allComplete?'All quests complete':'!quest'}</strong><small>{remaining>0?'The spirits need a moment':data.quest?'Complete quest & receive the next':allComplete?'You’ve conquered every haunting':'Get your next mission'}</small></span>
+   {!allComplete&&remaining===0&&<ChevronRight size={22} aria-hidden="true"/>}
+  </button>
+  <small className="hp-quest-help">Complete your mission before pressing !done. Prefer chat? Type !quest or !done.</small>
   {error&&<p className="hp-chat-error" role="alert">{error}</p>}
  </section>;
  return <Party mode="viewer" playerName={player.name} questPanel={questPanel} questId={data.quest?.id} onPlayerRefresh={refresh}/>;
