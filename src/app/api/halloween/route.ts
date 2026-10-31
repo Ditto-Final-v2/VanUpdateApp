@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
-const defaults = {location:'Poinsettia Mine',information:'Halloween underground. Join Curtis at the mine and the Dallas watch party for a night on the abandoned side of Road & Country.',nuggets:0,goal:100,chat_open:true};
+const defaults = {location:'Poinsettia Mine',information:'Halloween underground. Join Curtis at the mine and the Dallas watch party for a night on the abandoned side of Road & Country.',nuggets:0,goal:10000,chat_open:true};
 // Prefer a dedicated secret. Existing deployments can derive an isolated signing
 // key from their server-only Supabase credential without exposing that credential.
 function sessionSecret(){
@@ -11,7 +11,8 @@ function sessionSecret(){
 }
 function sign(s:string){const secret=sessionSecret();if(!secret)throw Error('Session signing is not configured.');return createHmac('sha256',secret).update(s).digest('hex');}
 function role(req:NextRequest){const c=req.cookies.get('halloween')?.value || '';const [r,e,s]=c.split('.');if(!sessionSecret() || !['host','admin'].includes(r) || !s || !Number.isFinite(Number(e)) || Number(e)<Date.now())return '';const expected=sign(`${r}.${e}`);return s.length===expected.length && timingSafeEqual(Buffer.from(s),Buffer.from(expected)) ? r : '';}
-function streams(){return [{id:'curtis',name:'Curtis · Poinsettia Mine',url:process.env.HALLOWEEN_CURTIS_PLAYER_URL || ''},{id:'dallas',name:'Dallas · Watch party',url:process.env.HALLOWEEN_DALLAS_PLAYER_URL || ''}];}
+function playbackUrl(value:string,muted:boolean){if(!value)return '';try{const url=new URL(value);url.searchParams.set('muted',String(muted));return url.toString();}catch{return '';}}
+function streams(){return [{id:'curtis',name:'Curtis · Poinsettia Mine',url:playbackUrl(process.env.HALLOWEEN_CURTIS_PLAYER_URL || '',false)},{id:'dallas',name:'Dallas · Watch party',url:playbackUrl(process.env.HALLOWEEN_DALLAS_PLAYER_URL || '',true)}];}
 export async function GET(req:NextRequest){
  let event=defaults,messages:unknown[]=[];let configured=false;
  try{const db=createAdminClient();const [a,b]=await Promise.all([db.from('halloween_event').select('*').eq('id',1).single(),db.from('halloween_messages').select('*').order('id',{ascending:false}).limit(100)]);if(a.error||b.error)throw Error();event=a.data;messages=(b.data || []).reverse();configured=true;}catch{}
@@ -40,7 +41,7 @@ export async function POST(req:NextRequest){
  }
  if(r!=='admin')return NextResponse.json({error:'Admin access required'},{status:403});
  if(b.action==='update'){
- if(!Number.isInteger(b.nuggets)||b.nuggets<0||b.nuggets>1000000||!Number.isInteger(b.goal)||b.goal<1||b.goal>1000000)throw Error('Enter valid nugget totals and a positive goal.');
+ if(!Number.isInteger(b.nuggets)||b.nuggets<0||b.nuggets>1000000||!Number.isInteger(b.goal)||b.goal<1||b.goal>1000000)throw Error('Enter valid Mercury Tonic totals and a positive goal.');
  const {error}=await db.from('halloween_event').update({location:String(b.location).slice(0,200),information:String(b.information).slice(0,5000),nuggets:b.nuggets,goal:b.goal,chat_open:!!b.chat_open}).eq('id',1);if(error)throw Error('Could not save event.');
  }else if(b.action==='delete'){const {error}=await db.from('halloween_messages').delete().eq('id',b.id);if(error)throw Error('Could not delete message.');}else throw Error('Unknown action');
  return NextResponse.json({ok:true});
