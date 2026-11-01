@@ -5,11 +5,12 @@ import { login, type LoginState } from "@/app/login/actions";
 
 const initialState: LoginState = { message: "" };
 
-export function LoginForm() {
+export function LoginForm({returnTo='/admin'}:{returnTo?:string}) {
   const [state, formAction, pending] = useActionState(login, initialState);
 
   return (
     <form action={formAction} className="mt-7 space-y-5">
+      <input type="hidden" name="returnTo" value={returnTo}/>
       <div>
         <label className="form-label" htmlFor="admin-email">Email address</label>
         <input className="form-input" id="admin-email" name="email" type="email" autoComplete="email" required />

@@ -1,27 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual } from 'node:crypto';
+import {halloweenSessionSecret as sessionSecret,signHalloweenSession as sign,resolveHalloweenRole as role} from '@/lib/halloween-session';
 import { createAdminClient } from '@/lib/supabase/admin';
 const defaults = {location:'Poinsettia Mine',information:'Halloween underground. Join Curtis at the mine and the Dallas watch party for a night on the abandoned side of Road & Country.',nuggets:0,goal:10000,chat_open:true};
-// Prefer a dedicated secret. Existing deployments can derive an isolated signing
-// key from their server-only Supabase credential without exposing that credential.
-function sessionSecret(){
- if(process.env.HALLOWEEN_SESSION_SECRET)return process.env.HALLOWEEN_SESSION_SECRET;
- const serverKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
- return serverKey ? createHmac('sha256',serverKey).update('road-country:halloween-session:v1').digest('hex') : null;
-}
-function sign(s:string){const secret=sessionSecret();if(!secret)throw Error('Session signing is not configured.');return createHmac('sha256',secret).update(s).digest('hex');}
-function role(req:NextRequest){const c=req.cookies.get('halloween')?.value || '';const [r,e,s]=c.split('.');if(!sessionSecret() || !['host','admin'].includes(r) || !s || !Number.isFinite(Number(e)) || Number(e)<Date.now())return '';const expected=sign(`${r}.${e}`);return s.length===expected.length && timingSafeEqual(Buffer.from(s),Buffer.from(expected)) ? r : '';}
 function playbackUrl(value:string,muted:boolean){if(!value)return '';try{const url=new URL(value);url.searchParams.set('muted',String(muted));return url.toString();}catch{return '';}}
 function streams(){return [{id:'curtis',name:'Curtis · Poinsettia Mine',url:playbackUrl(process.env.HALLOWEEN_CURTIS_PLAYER_URL || '',false)},{id:'dallas',name:'Dallas · Watch party',url:playbackUrl(process.env.HALLOWEEN_DALLAS_PLAYER_URL || '',true)}];}
 export async function GET(req:NextRequest){
  let event=defaults,messages:unknown[]=[];let configured=false;
  try{const db=createAdminClient();const [a,b]=await Promise.all([db.from('halloween_event').select('*').eq('id',1).single(),db.from('halloween_messages').select('*').order('id',{ascending:false}).limit(100)]);if(a.error||b.error)throw Error();event=a.data;messages=(b.data || []).reverse();configured=true;}catch{}
- return NextResponse.json({event,messages,streams:streams(),role:role(req),configured},{headers:{'Cache-Control':'no-store'}});
+ return NextResponse.json({event,messages,streams:streams(),role:await role(req),configured},{headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(req:NextRequest){
  if(req.headers.get('origin')!==req.nextUrl.origin)return NextResponse.json({error:'Invalid origin'},{status:403});
  try{
- const b=await req.json();const r=role(req);
+ const b=await req.json();const r=await role(req);
  if(b.action==='login'){
  if(!sessionSecret())throw Error('Set HALLOWEEN_SESSION_SECRET in the website hosting settings to enable login.');
  const password=b.role==='admin'?process.env.HALLOWEEN_ADMIN_PASSWORD:b.role==='host'?process.env.HALLOWEEN_HOST_PASSWORD:undefined;

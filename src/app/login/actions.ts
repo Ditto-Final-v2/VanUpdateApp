@@ -39,7 +39,7 @@ export async function login(
     return { message: "This account does not have administrator access." };
   }
 
-  redirect("/admin");
+  redirect(formData.get('returnTo')==='/halloweenparty/admin'?'/halloweenparty/admin':'/admin');
 }
 
 export async function logout() {
